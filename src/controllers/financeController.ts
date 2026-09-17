@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
+import { syncToErp } from '../services/erpIntegration';
 
 const prisma = new PrismaClient();
 
@@ -41,6 +42,147 @@ export const getFinancialReport = async (req: Request, res: Response) => {
         { id: 'mock-2', totalAmount: 500.0, status: 'unpaid', job: { customer: { name: 'Commercial Client (Big Corp)' } }, createdAt: new Date() }
       ]
     });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const getInvoices = async (req: Request, res: Response) => {
+  try {
+    const invoices = await prisma.invoice.findMany({
+      include: {
+        job: {
+          include: { customer: true }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+    res.json(invoices);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const createInvoice = async (req: Request, res: Response) => {
+  try {
+    const { jobId, totalAmount } = req.body;
+    const invoice = await prisma.invoice.create({
+      data: {
+        jobId,
+        totalAmount,
+        status: 'unpaid'
+      }
+    });
+    // Update job status to invoiced
+    await prisma.job.update({
+      where: { id: jobId },
+      data: { status: 'invoiced' }
+    });
+    res.status(201).json(invoice);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const markInvoicePaid = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const invoice = await prisma.invoice.update({
+      where: { id },
+      data: { status: 'paid' },
+      include: {
+        job: {
+          include: { customer: true }
+        }
+      }
+    });
+    res.json(invoice);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const createQuote = async (req: Request, res: Response) => {
+  try {
+    const { customerId, propertyId, totalAmount } = req.body;
+    const quote = await prisma.quote.create({
+      data: {
+        customerId,
+        propertyId,
+        totalAmount,
+        status: 'draft'
+      }
+    });
+    res.status(201).json(quote);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const getQuotes = async (req: Request, res: Response) => {
+  try {
+    const quotes = await prisma.quote.findMany({
+      include: { customer: true, property: true },
+      orderBy: { createdAt: 'desc' }
+    });
+    res.json(quotes);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const acceptQuote = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const quote = await prisma.quote.update({
+      where: { id },
+      data: { status: 'accepted' }
+    });
+    // In a full implementation this might also create a Job or Contract
+    res.json(quote);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const recordPayment = async (req: Request, res: Response) => {
+  try {
+    const { invoiceId, customerId, amount, method } = req.body;
+    const payment = await prisma.payment.create({
+      data: {
+        invoiceId,
+        customerId,
+        amount,
+        method,
+        status: 'completed',
+        externalTransactionId: `mock-txn-${Date.now()}`
+      }
+    });
+    if (invoiceId) {
+      await prisma.invoice.update({
+        where: { id: invoiceId },
+        data: { status: 'paid' }
+      });
+    }
+    res.status(201).json(payment);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const triggerErpSync = async (req: Request, res: Response) => {
+  try {
+    const { provider, resourceId, resourceType, payload } = req.body;
+    const log = await syncToErp(provider, resourceId, resourceType, payload);
+    res.status(201).json(log);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Internal server error' });

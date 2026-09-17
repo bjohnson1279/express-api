@@ -22,6 +22,8 @@ model Tenant {
   serviceContracts ServiceContract[]
   contactLogs   ContactLog[]
   internalNotes InternalNote[]
+  onboardingChecklists OnboardingChecklist[]
+  notificationQueue NotificationQueue[]
 
   @@map("tenants")
 }
@@ -55,6 +57,8 @@ model User {
   commissions  Commission[]
   contactLogs  ContactLog[]
   internalNotes InternalNote[]
+  onboardingTasks EmployeeOnboardingTask[]
+  documents     EmployeeDocument[]
 
   @@map("users")
 }
@@ -129,6 +133,11 @@ model Customer {
   contracts          ServiceContract[]
   contactLogs        ContactLog[]
   internalNotes      InternalNote[]
+  phones             CustomerPhone[]
+  emails             CustomerEmail[]
+  notificationQueue  NotificationQueue[]
+  quotes             Quote[]
+  payments           Payment[]
 
   @@map("customers")
 }
@@ -159,6 +168,7 @@ model Property {
   jobs       Job[]
   contracts  ServiceContract[]
   internalNotes InternalNote[]
+  quotes        Quote[]
 
   @@map("properties")
 }
@@ -227,6 +237,7 @@ model Job {
   invoices       Invoice[]
   commissions    Commission[]
   chemicalLogs   ChemicalApplicationLog[]
+  notificationQueue NotificationQueue[]
 
   @@map("jobs")
 }
@@ -269,6 +280,7 @@ model Invoice {
   status      String   @default("unpaid") @db.VarChar(50)
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @default(now()) @map("updated_at")
+  payments    Payment[]
 
   @@map("invoices")
 }
@@ -362,4 +374,166 @@ model InternalNote {
   updatedAt  DateTime @default(now()) @map("updated_at")
 
   @@map("internal_notes")
+}
+
+model OnboardingChecklist {
+  id               String   @id @default(uuid()) @db.Uuid
+  tenantId         String   @map("tenant_id") @db.Uuid
+  tenant           Tenant   @relation(fields: [tenantId], references: [id])
+  role             Role
+  taskName         String   @map("task_name") @db.VarChar(255)
+  description      String?  @db.Text
+  requiresDocument Boolean  @default(false) @map("requires_document")
+  createdAt        DateTime @default(now()) @map("created_at")
+  tasks            EmployeeOnboardingTask[]
+
+  @@map("onboarding_checklists")
+}
+
+model EmployeeOnboardingTask {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  user        User     @relation(fields: [userId], references: [id])
+  checklistId String   @map("checklist_id") @db.Uuid
+  checklist   OnboardingChecklist @relation(fields: [checklistId], references: [id])
+  status      String   @default("pending") @db.VarChar(50)
+  completedAt DateTime? @map("completed_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  documents   EmployeeDocument[]
+
+  @@map("employee_onboarding_tasks")
+}
+
+model EmployeeDocument {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String   @map("user_id") @db.Uuid
+  user         User     @relation(fields: [userId], references: [id])
+  taskId       String?  @map("task_id") @db.Uuid
+  task         EmployeeOnboardingTask? @relation(fields: [taskId], references: [id])
+  documentType String   @map("document_type") @db.VarChar(100)
+  filePath     String   @map("file_path") @db.Text
+  uploadedAt   DateTime @default(now()) @map("uploaded_at")
+
+  @@map("employee_documents")
+}
+
+model CustomerPhone {
+  id          String   @id @default(uuid()) @db.Uuid
+  customerId  String   @map("customer_id") @db.Uuid
+  customer    Customer @relation(fields: [customerId], references: [id])
+  phoneNumber String   @map("phone_number") @db.VarChar(20)
+  type        String   @db.VarChar(50)
+  isPrimary   Boolean  @default(false) @map("is_primary")
+  receivesSms Boolean  @default(false) @map("receives_sms")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("customer_phones")
+}
+
+model CustomerEmail {
+  id           String   @id @default(uuid()) @db.Uuid
+  customerId   String   @map("customer_id") @db.Uuid
+  customer     Customer @relation(fields: [customerId], references: [id])
+  emailAddress String   @map("email_address") @db.VarChar(255)
+  isPrimary    Boolean  @default(false) @map("is_primary")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@map("customer_emails")
+}
+
+model NotificationQueue {
+  id            String   @id @default(uuid()) @db.Uuid
+  tenantId      String   @map("tenant_id") @db.Uuid
+  tenant        Tenant   @relation(fields: [tenantId], references: [id])
+  customerId    String   @map("customer_id") @db.Uuid
+  customer      Customer @relation(fields: [customerId], references: [id])
+  jobId         String?  @map("job_id") @db.Uuid
+  job           Job?     @relation(fields: [jobId], references: [id])
+  channel       String   @db.VarChar(50)
+  contactTarget String   @map("contact_target") @db.VarChar(255)
+  messageContent String  @map("message_content") @db.Text
+  status        String   @default("pending") @db.VarChar(50)
+  errorLog      String?  @map("error_log") @db.Text
+  scheduledFor  DateTime @default(now()) @map("scheduled_for")
+  processedAt   DateTime? @map("processed_at")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@map("notification_queue")
+}
+
+enum QuoteStatus {
+  draft
+  sent
+  accepted
+  rejected
+
+  @@map("quote_status")
+}
+
+model Quote {
+  id          String   @id @default(uuid()) @db.Uuid
+  customerId  String   @map("customer_id") @db.Uuid
+  customer    Customer @relation(fields: [customerId], references: [id])
+  propertyId  String   @map("property_id") @db.Uuid
+  property    Property @relation(fields: [propertyId], references: [id])
+  totalAmount Decimal  @map("total_amount") @db.Decimal(12, 2)
+  status      QuoteStatus @default(draft)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @map("updated_at")
+
+  @@map("quotes")
+}
+
+enum PaymentMethod {
+  credit_card
+  cash
+  check
+  ach
+
+  @@map("payment_method")
+}
+
+enum PaymentStatus {
+  pending
+  completed
+  failed
+
+  @@map("payment_status")
+}
+
+model Payment {
+  id                    String   @id @default(uuid()) @db.Uuid
+  invoiceId             String?  @map("invoice_id") @db.Uuid
+  invoice               Invoice? @relation(fields: [invoiceId], references: [id])
+  customerId            String   @map("customer_id") @db.Uuid
+  customer              Customer @relation(fields: [customerId], references: [id])
+  amount                Decimal  @db.Decimal(12, 2)
+  method                PaymentMethod
+  status                PaymentStatus @default(pending)
+  externalTransactionId String?  @map("external_transaction_id") @db.VarChar(255)
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @default(now()) @map("updated_at")
+
+  @@map("payments")
+}
+
+enum ErpProvider {
+  quickbooks
+  xero
+  netsuite
+
+  @@map("erp_provider")
+}
+
+model ErpSyncLog {
+  id            String   @id @default(uuid()) @db.Uuid
+  provider      ErpProvider
+  resourceType  String   @map("resource_type") @db.VarChar(50)
+  resourceId    String   @map("resource_id") @db.Uuid
+  status        String   @db.VarChar(50)
+  errorMessage  String?  @map("error_message") @db.Text
+  syncTimestamp DateTime @default(now()) @map("sync_timestamp")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@map("erp_sync_logs")
 }

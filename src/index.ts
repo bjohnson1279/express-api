@@ -8,6 +8,11 @@ import canvassRoutes from './routes/canvassRoutes';
 import customerRoutes from './routes/customerRoutes';
 import hrRoutes from './routes/hrRoutes';
 import financeRoutes from './routes/financeRoutes';
+import twilioRoutes from './routes/twilioRoutes';
+import routingRoutes from './routes/routingRoutes';
+import analyticsRoutes from './routes/analyticsRoutes';
+import dispatchRoutes from './routes/dispatchRoutes';
+import { startNotificationCron } from './cron/NotificationCron';
 
 dotenv.config();
 
@@ -25,6 +30,12 @@ app.use('/api/v1/sales', canvassRoutes);
 app.use('/api/v1/customers', customerRoutes);
 app.use('/api/v1/hr', hrRoutes);
 app.use('/api/v1/finance', financeRoutes);
+app.use('/api/v1/analytics', analyticsRoutes);
+app.use('/api/v1/dispatch', dispatchRoutes);
+
+// New Routes
+app.use('/api/webhooks/twilio', twilioRoutes);
+app.use('/api/v1/routing', routingRoutes);
 
 // Health Check
 app.get('/health', (req: Request, res: Response) => {
@@ -33,4 +44,7 @@ app.get('/health', (req: Request, res: Response) => {
 
 app.listen(port, () => {
   console.log(`Express API running on port ${port}`);
+  
+  // Start the Notification Cron
+  startNotificationCron();
 });
