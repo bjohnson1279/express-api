@@ -8,22 +8,23 @@ datasource db {
 }
 
 model Tenant {
-  id            String   @id @default(uuid()) @db.Uuid
-  name          String   @db.VarChar(255)
-  businessHours Json?    @map("business_hours")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @default(now()) @map("updated_at")
-  users         User[]
-  jobs          Job[]
-  routes        Route[]
-  trainingCourses TrainingCourse[]
-  canvassPins   CanvassPin[]
-  commissions   Commission[]
-  serviceContracts ServiceContract[]
-  contactLogs   ContactLog[]
-  internalNotes InternalNote[]
+  id                   String                @id @default(uuid()) @db.Uuid
+  name                 String                @db.VarChar(255)
+  businessHours        Json?                 @map("business_hours")
+  createdAt            DateTime              @default(now()) @map("created_at")
+  updatedAt            DateTime              @default(now()) @map("updated_at")
+  users                User[]
+  jobs                 Job[]
+  routes               Route[]
+  trainingCourses      TrainingCourse[]
+  canvassPins          CanvassPin[]
+  commissions          Commission[]
+  serviceContracts     ServiceContract[]
+  contactLogs          ContactLog[]
+  internalNotes        InternalNote[]
   onboardingChecklists OnboardingChecklist[]
-  notificationQueue NotificationQueue[]
+  notificationQueue    NotificationQueue[]
+  agreements           ServiceAgreement[]
 
   @@map("tenants")
 }
@@ -41,53 +42,53 @@ enum Role {
 }
 
 model User {
-  id           String         @id @default(uuid()) @db.Uuid
-  tenantId     String         @map("tenant_id") @db.Uuid
-  tenant       Tenant         @relation(fields: [tenantId], references: [id])
-  email        String         @unique @db.VarChar(255)
-  passwordHash String         @map("password_hash") @db.VarChar(255)
-  role         Role
-  createdAt    DateTime       @default(now()) @map("created_at")
-  updatedAt    DateTime       @default(now()) @map("updated_at")
-  technician   Technician?
-  customer     Customer?
-  notifications Notification[]
-  certifications EmployeeCertification[]
-  canvassPins  CanvassPin[]
-  commissions  Commission[]
-  contactLogs  ContactLog[]
-  internalNotes InternalNote[]
+  id              String                   @id @default(uuid()) @db.Uuid
+  tenantId        String                   @map("tenant_id") @db.Uuid
+  tenant          Tenant                   @relation(fields: [tenantId], references: [id])
+  email           String                   @unique @db.VarChar(255)
+  passwordHash    String                   @map("password_hash") @db.VarChar(255)
+  role            Role
+  createdAt       DateTime                 @default(now()) @map("created_at")
+  updatedAt       DateTime                 @default(now()) @map("updated_at")
+  technician      Technician?
+  customer        Customer?
+  notifications   Notification[]
+  certifications  EmployeeCertification[]
+  canvassPins     CanvassPin[]
+  commissions     Commission[]
+  contactLogs     ContactLog[]
+  internalNotes   InternalNote[]
   onboardingTasks EmployeeOnboardingTask[]
-  documents     EmployeeDocument[]
+  documents       EmployeeDocument[]
 
   @@map("users")
 }
 
 model TrainingCourse {
-  id              String   @id @default(uuid()) @db.Uuid
-  tenantId        String   @map("tenant_id") @db.Uuid
-  tenant          Tenant   @relation(fields: [tenantId], references: [id])
-  title           String   @db.VarChar(255)
-  description     String?  @db.Text
-  isMandatory     Boolean  @default(false) @map("is_mandatory")
-  validityMonths  Int?     @map("validity_months")
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @default(now()) @map("updated_at")
-  certifications  EmployeeCertification[]
+  id             String                  @id @default(uuid()) @db.Uuid
+  tenantId       String                  @map("tenant_id") @db.Uuid
+  tenant         Tenant                  @relation(fields: [tenantId], references: [id])
+  title          String                  @db.VarChar(255)
+  description    String?                 @db.Text
+  isMandatory    Boolean                 @default(false) @map("is_mandatory")
+  validityMonths Int?                    @map("validity_months")
+  createdAt      DateTime                @default(now()) @map("created_at")
+  updatedAt      DateTime                @default(now()) @map("updated_at")
+  certifications EmployeeCertification[]
 
   @@map("training_courses")
 }
 
 model EmployeeCertification {
-  id          String   @id @default(uuid()) @db.Uuid
-  userId      String   @map("user_id") @db.Uuid
-  user        User     @relation(fields: [userId], references: [id])
-  courseId    String   @map("course_id") @db.Uuid
+  id          String         @id @default(uuid()) @db.Uuid
+  userId      String         @map("user_id") @db.Uuid
+  user        User           @relation(fields: [userId], references: [id])
+  courseId    String         @map("course_id") @db.Uuid
   course      TrainingCourse @relation(fields: [courseId], references: [id])
-  completedAt DateTime? @map("completed_at")
-  expiresAt   DateTime? @map("expires_at")
-  status      String   @default("active") @db.VarChar(50)
-  createdAt   DateTime @default(now()) @map("created_at")
+  completedAt DateTime?      @map("completed_at")
+  expiresAt   DateTime?      @map("expires_at")
+  status      String         @default("active") @db.VarChar(50)
+  createdAt   DateTime       @default(now()) @map("created_at")
 
   @@map("employee_certifications")
 }
@@ -102,15 +103,15 @@ enum TechStatus {
 }
 
 model Technician {
-  id                 String     @id @default(uuid()) @db.Uuid
-  userId             String     @unique @map("user_id") @db.Uuid
-  user               User       @relation(fields: [userId], references: [id])
+  id                 String                          @id @default(uuid()) @db.Uuid
+  userId             String                          @unique @map("user_id") @db.Uuid
+  user               User                            @relation(fields: [userId], references: [id])
   skills             Json?
-  status             TechStatus @default(off_duty)
-  currentLocationLat Decimal?   @map("current_location_lat") @db.Decimal(10, 7)
-  currentLocationLng Decimal?   @map("current_location_lng") @db.Decimal(10, 7)
-  createdAt          DateTime   @default(now()) @map("created_at")
-  updatedAt          DateTime   @default(now()) @map("updated_at")
+  status             TechStatus                      @default(off_duty)
+  currentLocationLat Decimal?                        @map("current_location_lat") @db.Decimal(10, 7)
+  currentLocationLng Decimal?                        @map("current_location_lng") @db.Decimal(10, 7)
+  createdAt          DateTime                        @default(now()) @map("created_at")
+  updatedAt          DateTime                        @default(now()) @map("updated_at")
   jobs               Job[]
   routes             Route[]
   restrictions       CustomerTechnicianRestriction[]
@@ -120,13 +121,13 @@ model Technician {
 }
 
 model Customer {
-  id                 String     @id @default(uuid()) @db.Uuid
-  userId             String     @unique @map("user_id") @db.Uuid
-  user               User       @relation(fields: [userId], references: [id])
-  name               String     @db.VarChar(255)
-  billingPreferences Json?      @map("billing_preferences")
-  createdAt          DateTime   @default(now()) @map("created_at")
-  updatedAt          DateTime   @default(now()) @map("updated_at")
+  id                 String                          @id @default(uuid()) @db.Uuid
+  userId             String                          @unique @map("user_id") @db.Uuid
+  user               User                            @relation(fields: [userId], references: [id])
+  name               String                          @db.VarChar(255)
+  billingPreferences Json?                           @map("billing_preferences")
+  createdAt          DateTime                        @default(now()) @map("created_at")
+  updatedAt          DateTime                        @default(now()) @map("updated_at")
   properties         Property[]
   jobs               Job[]
   restrictions       CustomerTechnicianRestriction[]
@@ -138,6 +139,8 @@ model Customer {
   notificationQueue  NotificationQueue[]
   quotes             Quote[]
   payments           Payment[]
+  healthScore        CustomerHealthScore?
+  agreements         ServiceAgreement[]
 
   @@map("customers")
 }
@@ -156,19 +159,20 @@ model CustomerTechnicianRestriction {
 }
 
 model Property {
-  id         String   @id @default(uuid()) @db.Uuid
-  customerId String   @map("customer_id") @db.Uuid
-  customer   Customer @relation(fields: [customerId], references: [id])
-  address    String   @db.VarChar(255)
-  city       String?  @db.VarChar(100)
-  state      String?  @db.VarChar(100)
-  zipCode    String?  @map("zip_code") @db.VarChar(20)
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @default(now()) @map("updated_at")
-  jobs       Job[]
-  contracts  ServiceContract[]
+  id            String            @id @default(uuid()) @db.Uuid
+  customerId    String            @map("customer_id") @db.Uuid
+  customer      Customer          @relation(fields: [customerId], references: [id])
+  address       String            @db.VarChar(255)
+  city          String?           @db.VarChar(100)
+  state         String?           @db.VarChar(100)
+  zipCode       String?           @map("zip_code") @db.VarChar(20)
+  createdAt     DateTime          @default(now()) @map("created_at")
+  updatedAt     DateTime          @default(now()) @map("updated_at")
+  jobs          Job[]
+  contracts     ServiceContract[]
   internalNotes InternalNote[]
   quotes        Quote[]
+  agreements    ServiceAgreement[]
 
   @@map("properties")
 }
@@ -185,22 +189,23 @@ enum ContractCadence {
 }
 
 model ServiceContract {
-  id              String   @id @default(uuid()) @db.Uuid
-  tenantId        String   @map("tenant_id") @db.Uuid
-  tenant          Tenant   @relation(fields: [tenantId], references: [id])
-  customerId      String   @map("customer_id") @db.Uuid
-  customer        Customer @relation(fields: [customerId], references: [id])
-  propertyId      String   @map("property_id") @db.Uuid
-  property        Property @relation(fields: [propertyId], references: [id])
+  id              String          @id @default(uuid()) @db.Uuid
+  tenantId        String          @map("tenant_id") @db.Uuid
+  tenant          Tenant          @relation(fields: [tenantId], references: [id])
+  customerId      String          @map("customer_id") @db.Uuid
+  customer        Customer        @relation(fields: [customerId], references: [id])
+  propertyId      String          @map("property_id") @db.Uuid
+  property        Property        @relation(fields: [propertyId], references: [id])
   cadence         ContractCadence
-  startDate       DateTime @map("start_date") @db.Date
-  endDate         DateTime? @map("end_date") @db.Date
-  autoRenew       Boolean  @default(true) @map("auto_renew")
-  recurringAmount Decimal? @map("recurring_amount") @db.Decimal(10, 2)
-  status          String   @default("active") @db.VarChar(50)
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @default(now()) @map("updated_at")
+  startDate       DateTime        @map("start_date") @db.Date
+  endDate         DateTime?       @map("end_date") @db.Date
+  autoRenew       Boolean         @default(true) @map("auto_renew")
+  recurringAmount Decimal?        @map("recurring_amount") @db.Decimal(10, 2)
+  status          String          @default("active") @db.VarChar(50)
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @default(now()) @map("updated_at")
   jobs            Job[]
+  agreements      ServiceAgreement[]
 
   @@map("service_contracts")
 }
@@ -217,43 +222,43 @@ enum JobStatus {
 }
 
 model Job {
-  id             String      @id @default(uuid()) @db.Uuid
-  tenantId       String      @map("tenant_id") @db.Uuid
-  tenant         Tenant      @relation(fields: [tenantId], references: [id])
-  customerId     String      @map("customer_id") @db.Uuid
-  customer       Customer    @relation(fields: [customerId], references: [id])
-  propertyId     String      @map("property_id") @db.Uuid
-  property       Property    @relation(fields: [propertyId], references: [id])
-  technicianId   String?     @map("technician_id") @db.Uuid
-  technician     Technician? @relation(fields: [technicianId], references: [id])
-  contractId     String?     @map("contract_id") @db.Uuid
-  contract       ServiceContract? @relation(fields: [contractId], references: [id])
-  status         JobStatus   @default(draft)
-  scheduledStart DateTime?   @map("scheduled_start")
-  scheduledEnd   DateTime?   @map("scheduled_end")
-  requiredSkills Json?       @map("required_skills")
-  createdAt      DateTime    @default(now()) @map("created_at")
-  updatedAt      DateTime    @default(now()) @map("updated_at")
-  invoices       Invoice[]
-  commissions    Commission[]
-  chemicalLogs   ChemicalApplicationLog[]
+  id                String                   @id @default(uuid()) @db.Uuid
+  tenantId          String                   @map("tenant_id") @db.Uuid
+  tenant            Tenant                   @relation(fields: [tenantId], references: [id])
+  customerId        String                   @map("customer_id") @db.Uuid
+  customer          Customer                 @relation(fields: [customerId], references: [id])
+  propertyId        String                   @map("property_id") @db.Uuid
+  property          Property                 @relation(fields: [propertyId], references: [id])
+  technicianId      String?                  @map("technician_id") @db.Uuid
+  technician        Technician?              @relation(fields: [technicianId], references: [id])
+  contractId        String?                  @map("contract_id") @db.Uuid
+  contract          ServiceContract?         @relation(fields: [contractId], references: [id])
+  status            JobStatus                @default(draft)
+  scheduledStart    DateTime?                @map("scheduled_start")
+  scheduledEnd      DateTime?                @map("scheduled_end")
+  requiredSkills    Json?                    @map("required_skills")
+  createdAt         DateTime                 @default(now()) @map("created_at")
+  updatedAt         DateTime                 @default(now()) @map("updated_at")
+  invoices          Invoice[]
+  commissions       Commission[]
+  chemicalLogs      ChemicalApplicationLog[]
   notificationQueue NotificationQueue[]
 
   @@map("jobs")
 }
 
 model ChemicalApplicationLog {
-  id                String   @id @default(uuid()) @db.Uuid
-  jobId             String   @map("job_id") @db.Uuid
-  job               Job      @relation(fields: [jobId], references: [id])
-  technicianId      String   @map("technician_id") @db.Uuid
+  id                String     @id @default(uuid()) @db.Uuid
+  jobId             String     @map("job_id") @db.Uuid
+  job               Job        @relation(fields: [jobId], references: [id])
+  technicianId      String     @map("technician_id") @db.Uuid
   technician        Technician @relation(fields: [technicianId], references: [id])
-  chemicalName      String   @map("chemical_name") @db.VarChar(255)
-  quantityUsed      Decimal  @map("quantity_used") @db.Decimal(10, 2)
-  unit              String   @db.VarChar(50)
-  targetPests       Json?    @map("target_pests")
-  weatherConditions Json?    @map("weather_conditions")
-  appliedAt         DateTime @default(now()) @map("applied_at")
+  chemicalName      String     @map("chemical_name") @db.VarChar(255)
+  quantityUsed      Decimal    @map("quantity_used") @db.Decimal(10, 2)
+  unit              String     @db.VarChar(50)
+  targetPests       Json?      @map("target_pests")
+  weatherConditions Json?      @map("weather_conditions")
+  appliedAt         DateTime   @default(now()) @map("applied_at")
 
   @@map("chemical_application_logs")
 }
@@ -273,13 +278,13 @@ model Route {
 }
 
 model Invoice {
-  id          String   @id @default(uuid()) @db.Uuid
-  jobId       String   @map("job_id") @db.Uuid
-  job         Job      @relation(fields: [jobId], references: [id])
-  totalAmount Decimal  @map("total_amount") @db.Decimal(12, 2)
-  status      String   @default("unpaid") @db.VarChar(50)
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @default(now()) @map("updated_at")
+  id          String    @id @default(uuid()) @db.Uuid
+  jobId       String    @map("job_id") @db.Uuid
+  job         Job       @relation(fields: [jobId], references: [id])
+  totalAmount Decimal   @map("total_amount") @db.Decimal(12, 2)
+  status      String    @default("unpaid") @db.VarChar(50)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @default(now()) @map("updated_at")
   payments    Payment[]
 
   @@map("invoices")
@@ -308,18 +313,18 @@ enum LeadStatus {
 }
 
 model CanvassPin {
-  id         String   @id @default(uuid()) @db.Uuid
-  tenantId   String   @map("tenant_id") @db.Uuid
-  tenant     Tenant   @relation(fields: [tenantId], references: [id])
-  salesRepId String   @map("sales_rep_id") @db.Uuid
-  salesRep   User     @relation(fields: [salesRepId], references: [id])
-  lat        Decimal  @db.Decimal(10, 7)
-  lng        Decimal  @db.Decimal(10, 7)
-  address    String?  @db.VarChar(255)
+  id         String     @id @default(uuid()) @db.Uuid
+  tenantId   String     @map("tenant_id") @db.Uuid
+  tenant     Tenant     @relation(fields: [tenantId], references: [id])
+  salesRepId String     @map("sales_rep_id") @db.Uuid
+  salesRep   User       @relation(fields: [salesRepId], references: [id])
+  lat        Decimal    @db.Decimal(10, 7)
+  lng        Decimal    @db.Decimal(10, 7)
+  address    String?    @db.VarChar(255)
   status     LeadStatus
-  notes      String?  @db.Text
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @default(now()) @map("updated_at")
+  notes      String?    @db.Text
+  createdAt  DateTime   @default(now()) @map("created_at")
+  updatedAt  DateTime   @default(now()) @map("updated_at")
 
   @@map("canvass_pins")
 }
@@ -359,60 +364,60 @@ model ContactLog {
 }
 
 model InternalNote {
-  id         String   @id @default(uuid()) @db.Uuid
-  tenantId   String   @map("tenant_id") @db.Uuid
-  tenant     Tenant   @relation(fields: [tenantId], references: [id])
-  customerId String   @map("customer_id") @db.Uuid
-  customer   Customer @relation(fields: [customerId], references: [id])
-  propertyId String?  @map("property_id") @db.Uuid
+  id         String    @id @default(uuid()) @db.Uuid
+  tenantId   String    @map("tenant_id") @db.Uuid
+  tenant     Tenant    @relation(fields: [tenantId], references: [id])
+  customerId String    @map("customer_id") @db.Uuid
+  customer   Customer  @relation(fields: [customerId], references: [id])
+  propertyId String?   @map("property_id") @db.Uuid
   property   Property? @relation(fields: [propertyId], references: [id])
-  authorId   String   @map("author_id") @db.Uuid
-  author     User     @relation(fields: [authorId], references: [id])
-  isPinned   Boolean  @default(false) @map("is_pinned")
-  noteText   String   @map("note_text") @db.Text
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @default(now()) @map("updated_at")
+  authorId   String    @map("author_id") @db.Uuid
+  author     User      @relation(fields: [authorId], references: [id])
+  isPinned   Boolean   @default(false) @map("is_pinned")
+  noteText   String    @map("note_text") @db.Text
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @default(now()) @map("updated_at")
 
   @@map("internal_notes")
 }
 
 model OnboardingChecklist {
-  id               String   @id @default(uuid()) @db.Uuid
-  tenantId         String   @map("tenant_id") @db.Uuid
-  tenant           Tenant   @relation(fields: [tenantId], references: [id])
+  id               String                   @id @default(uuid()) @db.Uuid
+  tenantId         String                   @map("tenant_id") @db.Uuid
+  tenant           Tenant                   @relation(fields: [tenantId], references: [id])
   role             Role
-  taskName         String   @map("task_name") @db.VarChar(255)
-  description      String?  @db.Text
-  requiresDocument Boolean  @default(false) @map("requires_document")
-  createdAt        DateTime @default(now()) @map("created_at")
+  taskName         String                   @map("task_name") @db.VarChar(255)
+  description      String?                  @db.Text
+  requiresDocument Boolean                  @default(false) @map("requires_document")
+  createdAt        DateTime                 @default(now()) @map("created_at")
   tasks            EmployeeOnboardingTask[]
 
   @@map("onboarding_checklists")
 }
 
 model EmployeeOnboardingTask {
-  id          String   @id @default(uuid()) @db.Uuid
-  userId      String   @map("user_id") @db.Uuid
-  user        User     @relation(fields: [userId], references: [id])
-  checklistId String   @map("checklist_id") @db.Uuid
+  id          String              @id @default(uuid()) @db.Uuid
+  userId      String              @map("user_id") @db.Uuid
+  user        User                @relation(fields: [userId], references: [id])
+  checklistId String              @map("checklist_id") @db.Uuid
   checklist   OnboardingChecklist @relation(fields: [checklistId], references: [id])
-  status      String   @default("pending") @db.VarChar(50)
-  completedAt DateTime? @map("completed_at")
-  createdAt   DateTime @default(now()) @map("created_at")
+  status      String              @default("pending") @db.VarChar(50)
+  completedAt DateTime?           @map("completed_at")
+  createdAt   DateTime            @default(now()) @map("created_at")
   documents   EmployeeDocument[]
 
   @@map("employee_onboarding_tasks")
 }
 
 model EmployeeDocument {
-  id           String   @id @default(uuid()) @db.Uuid
-  userId       String   @map("user_id") @db.Uuid
-  user         User     @relation(fields: [userId], references: [id])
-  taskId       String?  @map("task_id") @db.Uuid
+  id           String                  @id @default(uuid()) @db.Uuid
+  userId       String                  @map("user_id") @db.Uuid
+  user         User                    @relation(fields: [userId], references: [id])
+  taskId       String?                 @map("task_id") @db.Uuid
   task         EmployeeOnboardingTask? @relation(fields: [taskId], references: [id])
-  documentType String   @map("document_type") @db.VarChar(100)
-  filePath     String   @map("file_path") @db.Text
-  uploadedAt   DateTime @default(now()) @map("uploaded_at")
+  documentType String                  @map("document_type") @db.VarChar(100)
+  filePath     String                  @map("file_path") @db.Text
+  uploadedAt   DateTime                @default(now()) @map("uploaded_at")
 
   @@map("employee_documents")
 }
@@ -442,21 +447,21 @@ model CustomerEmail {
 }
 
 model NotificationQueue {
-  id            String   @id @default(uuid()) @db.Uuid
-  tenantId      String   @map("tenant_id") @db.Uuid
-  tenant        Tenant   @relation(fields: [tenantId], references: [id])
-  customerId    String   @map("customer_id") @db.Uuid
-  customer      Customer @relation(fields: [customerId], references: [id])
-  jobId         String?  @map("job_id") @db.Uuid
-  job           Job?     @relation(fields: [jobId], references: [id])
-  channel       String   @db.VarChar(50)
-  contactTarget String   @map("contact_target") @db.VarChar(255)
-  messageContent String  @map("message_content") @db.Text
-  status        String   @default("pending") @db.VarChar(50)
-  errorLog      String?  @map("error_log") @db.Text
-  scheduledFor  DateTime @default(now()) @map("scheduled_for")
-  processedAt   DateTime? @map("processed_at")
-  createdAt     DateTime @default(now()) @map("created_at")
+  id             String    @id @default(uuid()) @db.Uuid
+  tenantId       String    @map("tenant_id") @db.Uuid
+  tenant         Tenant    @relation(fields: [tenantId], references: [id])
+  customerId     String    @map("customer_id") @db.Uuid
+  customer       Customer  @relation(fields: [customerId], references: [id])
+  jobId          String?   @map("job_id") @db.Uuid
+  job            Job?      @relation(fields: [jobId], references: [id])
+  channel        String    @db.VarChar(50)
+  contactTarget  String    @map("contact_target") @db.VarChar(255)
+  messageContent String    @map("message_content") @db.Text
+  status         String    @default("pending") @db.VarChar(50)
+  errorLog       String?   @map("error_log") @db.Text
+  scheduledFor   DateTime  @default(now()) @map("scheduled_for")
+  processedAt    DateTime? @map("processed_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
 
   @@map("notification_queue")
 }
@@ -471,15 +476,15 @@ enum QuoteStatus {
 }
 
 model Quote {
-  id          String   @id @default(uuid()) @db.Uuid
-  customerId  String   @map("customer_id") @db.Uuid
-  customer    Customer @relation(fields: [customerId], references: [id])
-  propertyId  String   @map("property_id") @db.Uuid
-  property    Property @relation(fields: [propertyId], references: [id])
-  totalAmount Decimal  @map("total_amount") @db.Decimal(12, 2)
+  id          String      @id @default(uuid()) @db.Uuid
+  customerId  String      @map("customer_id") @db.Uuid
+  customer    Customer    @relation(fields: [customerId], references: [id])
+  propertyId  String      @map("property_id") @db.Uuid
+  property    Property    @relation(fields: [propertyId], references: [id])
+  totalAmount Decimal     @map("total_amount") @db.Decimal(12, 2)
   status      QuoteStatus @default(draft)
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @default(now()) @map("updated_at")
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @default(now()) @map("updated_at")
 
   @@map("quotes")
 }
@@ -502,17 +507,17 @@ enum PaymentStatus {
 }
 
 model Payment {
-  id                    String   @id @default(uuid()) @db.Uuid
-  invoiceId             String?  @map("invoice_id") @db.Uuid
-  invoice               Invoice? @relation(fields: [invoiceId], references: [id])
-  customerId            String   @map("customer_id") @db.Uuid
-  customer              Customer @relation(fields: [customerId], references: [id])
-  amount                Decimal  @db.Decimal(12, 2)
+  id                    String        @id @default(uuid()) @db.Uuid
+  invoiceId             String?       @map("invoice_id") @db.Uuid
+  invoice               Invoice?      @relation(fields: [invoiceId], references: [id])
+  customerId            String        @map("customer_id") @db.Uuid
+  customer              Customer      @relation(fields: [customerId], references: [id])
+  amount                Decimal       @db.Decimal(12, 2)
   method                PaymentMethod
   status                PaymentStatus @default(pending)
-  externalTransactionId String?  @map("external_transaction_id") @db.VarChar(255)
-  createdAt             DateTime @default(now()) @map("created_at")
-  updatedAt             DateTime @default(now()) @map("updated_at")
+  externalTransactionId String?       @map("external_transaction_id") @db.VarChar(255)
+  createdAt             DateTime      @default(now()) @map("created_at")
+  updatedAt             DateTime      @default(now()) @map("updated_at")
 
   @@map("payments")
 }
@@ -526,14 +531,57 @@ enum ErpProvider {
 }
 
 model ErpSyncLog {
-  id            String   @id @default(uuid()) @db.Uuid
+  id            String      @id @default(uuid()) @db.Uuid
   provider      ErpProvider
-  resourceType  String   @map("resource_type") @db.VarChar(50)
-  resourceId    String   @map("resource_id") @db.Uuid
-  status        String   @db.VarChar(50)
-  errorMessage  String?  @map("error_message") @db.Text
-  syncTimestamp DateTime @default(now()) @map("sync_timestamp")
-  createdAt     DateTime @default(now()) @map("created_at")
+  resourceType  String      @map("resource_type") @db.VarChar(50)
+  resourceId    String      @map("resource_id") @db.Uuid
+  status        String      @db.VarChar(50)
+  errorMessage  String?     @map("error_message") @db.Text
+  syncTimestamp DateTime    @default(now()) @map("sync_timestamp")
+  createdAt     DateTime    @default(now()) @map("created_at")
 
   @@map("erp_sync_logs")
+}
+
+model CustomerHealthScore {
+  id           String   @id @default(uuid()) @db.Uuid
+  customerId   String   @unique @map("customer_id") @db.Uuid
+  customer     Customer @relation(fields: [customerId], references: [id])
+  score        Int
+  riskLevel    String   @map("risk_level") @db.VarChar(50)
+  factors      Json?
+  calculatedAt DateTime @default(now()) @map("calculated_at")
+
+  @@map("customer_health_scores")
+}
+enum AgreementStatus {
+  draft
+  sent
+  signed
+  cancelled
+
+  @@map("agreement_status")
+}
+
+model ServiceAgreement {
+  id              String          @id @default(uuid()) @db.Uuid
+  tenantId        String          @map("tenant_id") @db.Uuid
+  tenant          Tenant          @relation(fields: [tenantId], references: [id])
+  customerId      String          @map("customer_id") @db.Uuid
+  customer        Customer        @relation(fields: [customerId], references: [id])
+  propertyId      String          @map("property_id") @db.Uuid
+  property        Property        @relation(fields: [propertyId], references: [id])
+  status          AgreementStatus @default(draft)
+  cadence         ContractCadence
+  recurringAmount Decimal         @map("recurring_amount") @db.Decimal(10, 2)
+  startDate       DateTime        @map("start_date") @db.Date
+  pdfUrl          String?         @map("pdf_url") @db.Text
+  signatureSvg    String?         @map("signature_svg") @db.Text
+  signedAt        DateTime?       @map("signed_at")
+  contractId      String?         @map("contract_id") @db.Uuid
+  contract        ServiceContract? @relation(fields: [contractId], references: [id])
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @default(now()) @map("updated_at")
+
+  @@map("service_agreements")
 }

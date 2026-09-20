@@ -12,7 +12,9 @@ import twilioRoutes from './routes/twilioRoutes';
 import routingRoutes from './routes/routingRoutes';
 import analyticsRoutes from './routes/analyticsRoutes';
 import dispatchRoutes from './routes/dispatchRoutes';
+import agreementRoutes from './routes/agreementRoutes';
 import { startNotificationCron } from './cron/NotificationCron';
+import { startHealthScoreCron } from './cron/HealthScoreCron';
 
 dotenv.config();
 
@@ -36,6 +38,7 @@ app.use('/api/v1/dispatch', dispatchRoutes);
 // New Routes
 app.use('/api/webhooks/twilio', twilioRoutes);
 app.use('/api/v1/routing', routingRoutes);
+app.use('/api/v1/agreements', agreementRoutes);
 
 // Health Check
 app.get('/health', (req: Request, res: Response) => {
@@ -47,4 +50,5 @@ app.listen(port, () => {
   
   // Start the Notification Cron
   startNotificationCron();
+  startHealthScoreCron();
 });

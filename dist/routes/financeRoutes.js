@@ -1,0 +1,15 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const financeController_1 = require("../controllers/financeController");
+const router = (0, express_1.Router)();
+router.get('/report', financeController_1.getFinancialReport);
+router.get('/invoices', financeController_1.getInvoices);
+router.post('/invoices', financeController_1.createInvoice);
+router.patch('/invoices/:id/status', financeController_1.markInvoicePaid);
+router.get('/quotes', financeController_1.getQuotes);
+router.post('/quotes', financeController_1.createQuote);
+router.patch('/quotes/:id/accept', financeController_1.acceptQuote);
+router.post('/payments', financeController_1.recordPayment);
+router.post('/integrations/erp/sync', financeController_1.triggerErpSync);
+exports.default = router;
