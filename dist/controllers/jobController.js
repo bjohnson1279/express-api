@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.updateJob = exports.createJob = exports.getJobs = void 0;
 const client_1 = require("@prisma/client");
+const eventBus_1 = require("../services/eventBus");
 const prisma = new client_1.PrismaClient();
 const getJobs = async (req, res) => {
     try {
@@ -57,6 +58,9 @@ const updateJob = async (req, res) => {
             where: { id },
             data
         });
+        if (technicianId !== undefined && technicianId !== null) {
+            eventBus_1.eventBus.broadcast('job_assigned', updated);
+        }
         res.json(updated);
     }
     catch (error) {

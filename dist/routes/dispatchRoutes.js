@@ -5,4 +5,6 @@ const dispatchController_1 = require("../controllers/dispatchController");
 const router = (0, express_1.Router)();
 router.post('/optimize', dispatchController_1.optimizeRoute);
 router.post('/emergency', dispatchController_1.emergencyDispatch);
+router.post('/auto-schedule', dispatchController_1.autoSchedule);
+router.post('/commit-schedule', dispatchController_1.commitSchedule);
 exports.default = router;

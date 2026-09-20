@@ -1,7 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.emergencyDispatch = exports.optimizeRoute = void 0;
+exports.autoSchedule = exports.emergencyDispatch = exports.optimizeRoute = void 0;
 const client_1 = require("@prisma/client");
+const eventBus_1 = require("../services/eventBus");
 const prisma = new client_1.PrismaClient();
 // Haversine distance formula approximation in miles
 function getDistance(lat1, lon1, lat2, lon2) {
@@ -96,6 +97,7 @@ const emergencyDispatch = async (req, res) => {
                 status: 'scheduled'
             }
         });
+        eventBus_1.eventBus.broadcast('job_assigned', updatedJob);
         res.json({
             message: `Emergency dispatch assigned to ${nearestTech.user.firstName} ${nearestTech.user.lastName}`,
             technician: nearestTech,
@@ -109,3 +111,42 @@ const emergencyDispatch = async (req, res) => {
     }
 };
 exports.emergencyDispatch = emergencyDispatch;
+const autoSchedule = async (req, res) => {
+    try {
+        const unassignedJobs = await prisma.job.findMany({ where: { technicianId: null, status: , 'draft\' }});: ,
+                const: techs = await prisma.technician.findMany({ where: { status: , 'available\' }});: ,
+                        const: schedule = unassignedJobs.map((job, idx) => ({
+                            jobId: job.id,
+                            technicianId: techs[idx % techs.length]?.id || null,
+                            estimatedDriveTimeMins: 15
+                        })),
+                        res, : .json(schedule)
+                    }, catch(err) {
+                        res.status(500).json({ error: , 'Failed\' });: 
+                        });
+                    },
+                    const: commitSchedule = async (req, res) => {
+                        try {
+                            const { schedule } = req.body;
+                            for (const item of schedule) {
+                                if (item.technicianId) {
+                                    await prisma.job.update({
+                                        where: { id: item.jobId },
+                                        data: { technicianId: item.technicianId, status: , 'scheduled\' }: 
+                                        }
+                                    });
+                                }
+                            }
+                            res.json({ success: true });
+                        }
+                        catch (err) {
+                            res.status(500).json({ error: , 'Failed\' });: 
+                            });
+                        }
+                        ;
+                    } }) } });
+    }
+    finally {
+    }
+};
+exports.autoSchedule = autoSchedule;

@@ -18,8 +18,10 @@ const routingRoutes_1 = __importDefault(require("./routes/routingRoutes"));
 const analyticsRoutes_1 = __importDefault(require("./routes/analyticsRoutes"));
 const dispatchRoutes_1 = __importDefault(require("./routes/dispatchRoutes"));
 const agreementRoutes_1 = __importDefault(require("./routes/agreementRoutes"));
+const eventRoutes_1 = __importDefault(require("./routes/eventRoutes"));
 const NotificationCron_1 = require("./cron/NotificationCron");
 const HealthScoreCron_1 = require("./cron/HealthScoreCron");
+const JobGenerationCron_1 = require("./cron/JobGenerationCron");
 dotenv_1.default.config();
 const app = (0, express_1.default)();
 const port = process.env.PORT || 8000;
@@ -39,6 +41,8 @@ app.use('/api/v1/dispatch', dispatchRoutes_1.default);
 app.use('/api/webhooks/twilio', twilioRoutes_1.default);
 app.use('/api/v1/routing', routingRoutes_1.default);
 app.use('/api/v1/agreements', agreementRoutes_1.default);
+// SSE Event Stream
+app.use('/api/events', eventRoutes_1.default);
 // Health Check
 app.get('/health', (req, res) => {
     res.json({ status: 'ok', service: 'express-api' });
@@ -48,4 +52,5 @@ app.listen(port, () => {
     // Start the Notification Cron
     (0, NotificationCron_1.startNotificationCron)();
     (0, HealthScoreCron_1.startHealthScoreCron)();
+    (0, JobGenerationCron_1.startJobGenerationCron)();
 });

@@ -13,8 +13,10 @@ import routingRoutes from './routes/routingRoutes';
 import analyticsRoutes from './routes/analyticsRoutes';
 import dispatchRoutes from './routes/dispatchRoutes';
 import agreementRoutes from './routes/agreementRoutes';
+import eventRoutes from './routes/eventRoutes';
 import { startNotificationCron } from './cron/NotificationCron';
 import { startHealthScoreCron } from './cron/HealthScoreCron';
+import { startJobGenerationCron } from './cron/JobGenerationCron';
 
 dotenv.config();
 
@@ -35,10 +37,19 @@ app.use('/api/v1/finance', financeRoutes);
 app.use('/api/v1/analytics', analyticsRoutes);
 app.use('/api/v1/dispatch', dispatchRoutes);
 
+import propertyRoutes from './routes/propertyRoutes';
+import path from 'path';
+
 // New Routes
 app.use('/api/webhooks/twilio', twilioRoutes);
 app.use('/api/v1/routing', routingRoutes);
 app.use('/api/v1/agreements', agreementRoutes);
+app.use('/api/v1/properties', propertyRoutes);
+
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
+// SSE Event Stream
+app.use('/api/events', eventRoutes);
 
 // Health Check
 app.get('/health', (req: Request, res: Response) => {
@@ -51,4 +62,5 @@ app.listen(port, () => {
   // Start the Notification Cron
   startNotificationCron();
   startHealthScoreCron();
+  startJobGenerationCron();
 });

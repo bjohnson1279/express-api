@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import twilio from 'twilio';
+import { eventBus } from '../services/eventBus';
 
 const prisma = new PrismaClient();
 
@@ -35,6 +36,9 @@ export class TwilioWebhookController {
 
       // Respond with empty TwiML
       const twiml = new twilio.twiml.MessagingResponse();
+      
+      eventBus.broadcast('sms_received', { From, Body, To });
+      
       res.type('text/xml').send(twiml.toString());
     } catch (error) {
       console.error('Error handling inbound SMS:', error);

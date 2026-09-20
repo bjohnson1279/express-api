@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.TwilioWebhookController = void 0;
 const client_1 = require("@prisma/client");
 const twilio_1 = __importDefault(require("twilio"));
+const eventBus_1 = require("../services/eventBus");
 const prisma = new client_1.PrismaClient();
 class TwilioWebhookController {
     static async handleInboundSms(req, res) {
@@ -34,6 +35,7 @@ class TwilioWebhookController {
             }
             // Respond with empty TwiML
             const twiml = new twilio_1.default.twiml.MessagingResponse();
+            eventBus_1.eventBus.broadcast('sms_received', { From, Body, To });
             res.type('text/xml').send(twiml.toString());
         }
         catch (error) {

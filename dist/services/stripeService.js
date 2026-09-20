@@ -5,7 +5,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.stripeService = void 0;
 const stripe_1 = __importDefault(require("stripe"));
-const stripe = new stripe_1.default(process.env.STRIPE_SECRET_KEY || '', {
+const stripe = new stripe_1.default(process.env.STRIPE_SECRET_KEY, {
+    // @ts-ignore
     apiVersion: '2023-10-16',
 });
 exports.stripeService = {

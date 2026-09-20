@@ -173,6 +173,7 @@ model Property {
   internalNotes InternalNote[]
   quotes        Quote[]
   agreements    ServiceAgreement[]
+  photos        PropertyPhoto[]
 
   @@map("properties")
 }
@@ -243,6 +244,7 @@ model Job {
   commissions       Commission[]
   chemicalLogs      ChemicalApplicationLog[]
   notificationQueue NotificationQueue[]
+  photos            PropertyPhoto[]
 
   @@map("jobs")
 }
@@ -584,4 +586,19 @@ model ServiceAgreement {
   updatedAt       DateTime        @default(now()) @map("updated_at")
 
   @@map("service_agreements")
+}
+model PropertyPhoto {
+  id         String   @id @default(uuid()) @db.Uuid
+  propertyId String   @map("property_id") @db.Uuid
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  jobId      String?  @map("job_id") @db.Uuid
+  job        Job?     @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  url        String   @db.VarChar(2048)
+  caption    String?  @db.Text
+  tags       Json?
+  uploadedAt DateTime @default(now()) @map("uploaded_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @default(now()) @map("updated_at")
+
+  @@map("property_photos")
 }

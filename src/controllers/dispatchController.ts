@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { PrismaClient, TechStatus } from '@prisma/client';
+import { eventBus } from '../services/eventBus';
 
 const prisma = new PrismaClient();
 
@@ -116,6 +117,8 @@ export const emergencyDispatch = async (req: Request, res: Response) => {
       }
     });
 
+    eventBus.broadcast('job_assigned', updatedJob);
+
     res.json({
       message: `Emergency dispatch assigned to ${nearestTech.user.firstName} ${nearestTech.user.lastName}`,
       technician: nearestTech,
@@ -126,5 +129,39 @@ export const emergencyDispatch = async (req: Request, res: Response) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const autoSchedule = async (req: Request, res: Response) => {
+  try {
+    const unassignedJobs = await prisma.job.findMany({ where: { technicianId: null, status: \'draft\' }});
+    const techs = await prisma.technician.findMany({ where: { status: \'available\' }});
+    
+    const schedule = unassignedJobs.map((job, idx) => ({
+      jobId: job.id,
+      technicianId: techs[idx % techs.length]?.id || null,
+      estimatedDriveTimeMins: 15
+    }));
+    
+    res.json(schedule);
+  } catch (err) {
+    res.status(500).json({ error: \'Failed\' });
+  }
+};
+
+export const commitSchedule = async (req: Request, res: Response) => {
+  try {
+    const { schedule } = req.body;
+    for (const item of schedule) {
+      if (item.technicianId) {
+        await prisma.job.update({
+          where: { id: item.jobId },
+          data: { technicianId: item.technicianId, status: \'scheduled\' }
+        });
+      }
+    }
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: \'Failed\' });
   }
 };

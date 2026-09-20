@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.updateLocation = exports.getTechnicianSchedule = exports.getTechnicians = void 0;
 const client_1 = require("@prisma/client");
+const eventBus_1 = require("../services/eventBus");
 const prisma = new client_1.PrismaClient();
 const getTechnicians = async (req, res) => {
     try {
@@ -51,6 +52,7 @@ const updateLocation = async (req, res) => {
                 currentLocationLng: lng
             }
         });
+        eventBus_1.eventBus.broadcast('tech_updated', updated);
         res.json(updated);
     }
     catch (error) {

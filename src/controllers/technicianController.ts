@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
+import { eventBus } from '../services/eventBus';
 
 const prisma = new PrismaClient();
 
@@ -50,6 +51,7 @@ export const updateLocation = async (req: Request, res: Response) => {
         currentLocationLng: lng
       }
     });
+    eventBus.broadcast('tech_updated', updated);
     res.json(updated);
   } catch (error) {
     console.error(error);

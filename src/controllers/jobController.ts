@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
+import { eventBus } from '../services/eventBus';
 
 const prisma = new PrismaClient();
 
@@ -55,6 +56,11 @@ export const updateJob = async (req: Request, res: Response) => {
       where: { id },
       data
     });
+
+    if (technicianId !== undefined && technicianId !== null) {
+      eventBus.broadcast('job_assigned', updated);
+    }
+
     res.json(updated);
   } catch (error) {
     console.error(error);
