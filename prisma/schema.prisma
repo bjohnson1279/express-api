@@ -25,6 +25,10 @@ model Tenant {
   onboardingChecklists OnboardingChecklist[]
   notificationQueue    NotificationQueue[]
   agreements           ServiceAgreement[]
+  Campaign             Campaign[]
+  AutomatedFollowup    AutomatedFollowup[]
+  InventoryItem        InventoryItem[]
+  PurchaseOrder        PurchaseOrder[]
 
   @@map("tenants")
 }
@@ -141,6 +145,7 @@ model Customer {
   payments           Payment[]
   healthScore        CustomerHealthScore?
   agreements         ServiceAgreement[]
+  AutomatedFollowup  AutomatedFollowup[]
 
   @@map("customers")
 }
@@ -159,15 +164,15 @@ model CustomerTechnicianRestriction {
 }
 
 model Property {
-  id            String            @id @default(uuid()) @db.Uuid
-  customerId    String            @map("customer_id") @db.Uuid
-  customer      Customer          @relation(fields: [customerId], references: [id])
-  address       String            @db.VarChar(255)
-  city          String?           @db.VarChar(100)
-  state         String?           @db.VarChar(100)
-  zipCode       String?           @map("zip_code") @db.VarChar(20)
-  createdAt     DateTime          @default(now()) @map("created_at")
-  updatedAt     DateTime          @default(now()) @map("updated_at")
+  id            String             @id @default(uuid()) @db.Uuid
+  customerId    String             @map("customer_id") @db.Uuid
+  customer      Customer           @relation(fields: [customerId], references: [id])
+  address       String             @db.VarChar(255)
+  city          String?            @db.VarChar(100)
+  state         String?            @db.VarChar(100)
+  zipCode       String?            @map("zip_code") @db.VarChar(20)
+  createdAt     DateTime           @default(now()) @map("created_at")
+  updatedAt     DateTime           @default(now()) @map("updated_at")
   jobs          Job[]
   contracts     ServiceContract[]
   internalNotes InternalNote[]
@@ -190,21 +195,21 @@ enum ContractCadence {
 }
 
 model ServiceContract {
-  id              String          @id @default(uuid()) @db.Uuid
-  tenantId        String          @map("tenant_id") @db.Uuid
-  tenant          Tenant          @relation(fields: [tenantId], references: [id])
-  customerId      String          @map("customer_id") @db.Uuid
-  customer        Customer        @relation(fields: [customerId], references: [id])
-  propertyId      String          @map("property_id") @db.Uuid
-  property        Property        @relation(fields: [propertyId], references: [id])
+  id              String             @id @default(uuid()) @db.Uuid
+  tenantId        String             @map("tenant_id") @db.Uuid
+  tenant          Tenant             @relation(fields: [tenantId], references: [id])
+  customerId      String             @map("customer_id") @db.Uuid
+  customer        Customer           @relation(fields: [customerId], references: [id])
+  propertyId      String             @map("property_id") @db.Uuid
+  property        Property           @relation(fields: [propertyId], references: [id])
   cadence         ContractCadence
-  startDate       DateTime        @map("start_date") @db.Date
-  endDate         DateTime?       @map("end_date") @db.Date
-  autoRenew       Boolean         @default(true) @map("auto_renew")
-  recurringAmount Decimal?        @map("recurring_amount") @db.Decimal(10, 2)
-  status          String          @default("active") @db.VarChar(50)
-  createdAt       DateTime        @default(now()) @map("created_at")
-  updatedAt       DateTime        @default(now()) @map("updated_at")
+  startDate       DateTime           @map("start_date") @db.Date
+  endDate         DateTime?          @map("end_date") @db.Date
+  autoRenew       Boolean            @default(true) @map("auto_renew")
+  recurringAmount Decimal?           @map("recurring_amount") @db.Decimal(10, 2)
+  status          String             @default("active") @db.VarChar(50)
+  createdAt       DateTime           @default(now()) @map("created_at")
+  updatedAt       DateTime           @default(now()) @map("updated_at")
   jobs            Job[]
   agreements      ServiceAgreement[]
 
@@ -556,6 +561,7 @@ model CustomerHealthScore {
 
   @@map("customer_health_scores")
 }
+
 enum AgreementStatus {
   draft
   sent
@@ -566,27 +572,28 @@ enum AgreementStatus {
 }
 
 model ServiceAgreement {
-  id              String          @id @default(uuid()) @db.Uuid
-  tenantId        String          @map("tenant_id") @db.Uuid
-  tenant          Tenant          @relation(fields: [tenantId], references: [id])
-  customerId      String          @map("customer_id") @db.Uuid
-  customer        Customer        @relation(fields: [customerId], references: [id])
-  propertyId      String          @map("property_id") @db.Uuid
-  property        Property        @relation(fields: [propertyId], references: [id])
-  status          AgreementStatus @default(draft)
+  id              String           @id @default(uuid()) @db.Uuid
+  tenantId        String           @map("tenant_id") @db.Uuid
+  tenant          Tenant           @relation(fields: [tenantId], references: [id])
+  customerId      String           @map("customer_id") @db.Uuid
+  customer        Customer         @relation(fields: [customerId], references: [id])
+  propertyId      String           @map("property_id") @db.Uuid
+  property        Property         @relation(fields: [propertyId], references: [id])
+  status          AgreementStatus  @default(draft)
   cadence         ContractCadence
-  recurringAmount Decimal         @map("recurring_amount") @db.Decimal(10, 2)
-  startDate       DateTime        @map("start_date") @db.Date
-  pdfUrl          String?         @map("pdf_url") @db.Text
-  signatureSvg    String?         @map("signature_svg") @db.Text
-  signedAt        DateTime?       @map("signed_at")
-  contractId      String?         @map("contract_id") @db.Uuid
+  recurringAmount Decimal          @map("recurring_amount") @db.Decimal(10, 2)
+  startDate       DateTime         @map("start_date") @db.Date
+  pdfUrl          String?          @map("pdf_url") @db.Text
+  signatureSvg    String?          @map("signature_svg") @db.Text
+  signedAt        DateTime?        @map("signed_at")
+  contractId      String?          @map("contract_id") @db.Uuid
   contract        ServiceContract? @relation(fields: [contractId], references: [id])
-  createdAt       DateTime        @default(now()) @map("created_at")
-  updatedAt       DateTime        @default(now()) @map("updated_at")
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @default(now()) @map("updated_at")
 
   @@map("service_agreements")
 }
+
 model PropertyPhoto {
   id         String   @id @default(uuid()) @db.Uuid
   propertyId String   @map("property_id") @db.Uuid
@@ -601,4 +608,69 @@ model PropertyPhoto {
   updatedAt  DateTime @default(now()) @map("updated_at")
 
   @@map("property_photos")
+}
+
+model Campaign {
+  id        String              @id @default(uuid()) @db.Uuid
+  tenantId  String              @map("tenant_id") @db.Uuid
+  tenant    Tenant              @relation(fields: [tenantId], references: [id])
+  name      String              @db.VarChar(255)
+  status    String              @default("draft") @db.VarChar(50)
+  startDate DateTime?           @map("start_date") @db.Date
+  endDate   DateTime?           @map("end_date") @db.Date
+  budget    Decimal?            @db.Decimal(10, 2)
+  createdAt DateTime            @default(now()) @map("created_at")
+  updatedAt DateTime            @default(now()) @map("updated_at")
+  followups AutomatedFollowup[]
+
+  @@map("campaigns")
+}
+
+model AutomatedFollowup {
+  id            String    @id @default(uuid()) @db.Uuid
+  tenantId      String    @map("tenant_id") @db.Uuid
+  tenant        Tenant    @relation(fields: [tenantId], references: [id])
+  customerId    String    @map("customer_id") @db.Uuid
+  customer      Customer  @relation(fields: [customerId], references: [id])
+  campaignId    String?   @map("campaign_id") @db.Uuid
+  campaign      Campaign? @relation(fields: [campaignId], references: [id])
+  sequenceType  String    @map("sequence_type") @db.VarChar(100)
+  scheduledDate DateTime  @map("scheduled_date")
+  sentStatus    String    @default("pending") @map("sent_status") @db.VarChar(50)
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @default(now()) @map("updated_at")
+
+  @@map("automated_followups")
+}
+
+model InventoryItem {
+  id               String          @id @default(uuid()) @db.Uuid
+  tenantId         String          @map("tenant_id") @db.Uuid
+  tenant           Tenant          @relation(fields: [tenantId], references: [id])
+  name             String          @db.VarChar(255)
+  sku              String          @db.VarChar(100)
+  quantity         Int             @default(0)
+  minimumThreshold Int             @default(10) @map("minimum_threshold")
+  unitCost         Decimal?        @map("unit_cost") @db.Decimal(10, 2)
+  location         String?         @db.VarChar(255)
+  createdAt        DateTime        @default(now()) @map("created_at")
+  updatedAt        DateTime        @default(now()) @map("updated_at")
+  purchaseOrders   PurchaseOrder[]
+
+  @@map("inventory_items")
+}
+
+model PurchaseOrder {
+  id                   String        @id @default(uuid()) @db.Uuid
+  tenantId             String        @map("tenant_id") @db.Uuid
+  tenant               Tenant        @relation(fields: [tenantId], references: [id])
+  itemId               String        @map("item_id") @db.Uuid
+  item                 InventoryItem @relation(fields: [itemId], references: [id])
+  quantity             Int
+  status               String        @default("draft") @db.VarChar(50)
+  expectedDeliveryDate DateTime?     @map("expected_delivery_date") @db.Date
+  createdAt            DateTime      @default(now()) @map("created_at")
+  updatedAt            DateTime      @default(now()) @map("updated_at")
+
+  @@map("purchase_orders")
 }

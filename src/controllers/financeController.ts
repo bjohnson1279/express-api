@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { AuthRequest } from '../middleware/authMiddleware';
 import { PrismaClient } from '@prisma/client';
 import { syncToErp } from '../services/erpIntegration';
 
@@ -137,15 +138,32 @@ export const getQuotes = async (req: Request, res: Response) => {
   }
 };
 
-export const acceptQuote = async (req: Request, res: Response) => {
+import { eventBus } from '../services/eventBus';
+
+export const acceptQuote = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
+    const tenantId = req.user?.tenantId!;
     const quote = await prisma.quote.update({
       where: { id },
-      data: { status: 'accepted' }
+      data: { status: 'accepted' },
+      include: { customer: true }
     });
-    // In a full implementation this might also create a Job or Contract
-    res.json(quote);
+    
+    // Automatically generate a corresponding Job for the accepted quote
+    const newJob = await prisma.job.create({
+      data: {
+        tenantId: tenantId, 
+        customerId: quote.customerId,
+        propertyId: quote.propertyId,
+        status: 'draft'
+      }
+    });
+
+    // Publish event
+    eventBus.broadcast('quote_accepted', { quote, job: newJob });
+
+    res.json({ quote, job: newJob });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Internal server error' });

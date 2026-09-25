@@ -134,8 +134,8 @@ export const emergencyDispatch = async (req: Request, res: Response) => {
 
 export const autoSchedule = async (req: Request, res: Response) => {
   try {
-    const unassignedJobs = await prisma.job.findMany({ where: { technicianId: null, status: \'draft\' }});
-    const techs = await prisma.technician.findMany({ where: { status: \'available\' }});
+    const unassignedJobs = await prisma.job.findMany({ where: { technicianId: null, status: 'draft' }});
+    const techs = await prisma.technician.findMany({ where: { status: 'available' }});
     
     const schedule = unassignedJobs.map((job, idx) => ({
       jobId: job.id,
@@ -145,7 +145,7 @@ export const autoSchedule = async (req: Request, res: Response) => {
     
     res.json(schedule);
   } catch (err) {
-    res.status(500).json({ error: \'Failed\' });
+    res.status(500).json({ error: 'Failed' });
   }
 };
 
@@ -156,12 +156,12 @@ export const commitSchedule = async (req: Request, res: Response) => {
       if (item.technicianId) {
         await prisma.job.update({
           where: { id: item.jobId },
-          data: { technicianId: item.technicianId, status: \'scheduled\' }
+          data: { technicianId: item.technicianId, status: 'scheduled' }
         });
       }
     }
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: \'Failed\' });
+    res.status(500).json({ error: 'Failed' });
   }
 };
