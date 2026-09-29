@@ -265,7 +265,11 @@ model ChemicalApplicationLog {
   unit              String     @db.VarChar(50)
   targetPests       Json?      @map("target_pests")
   weatherConditions Json?      @map("weather_conditions")
-  appliedAt         DateTime   @default(now()) @map("applied_at")
+  appliedAt         DateTime       @default(now()) @map("applied_at")
+  photoUrl          String?        @map("photo_url")
+  inventoryItemId   String?        @map("inventory_item_id") @db.Uuid
+  inventoryItem     InventoryItem? @relation(fields: [inventoryItemId], references: [id])
+  epaRegistrationNo String?        @map("epa_registration_no") @db.VarChar(100)
 
   @@map("chemical_application_logs")
 }
@@ -656,6 +660,7 @@ model InventoryItem {
   createdAt        DateTime        @default(now()) @map("created_at")
   updatedAt        DateTime        @default(now()) @map("updated_at")
   purchaseOrders   PurchaseOrder[]
+  chemicalLogs     ChemicalApplicationLog[]
 
   @@map("inventory_items")
 }
