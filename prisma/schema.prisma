@@ -31,6 +31,9 @@ model Tenant {
   PurchaseOrder        PurchaseOrder[]
   territories          Territory[]
   doNotKnockRecords    DoNotKnockRecord[]
+  chatConversations    ChatConversation[]
+  chatMessages         ChatMessage[]
+  cannedResponses      CannedResponse[]
 
   @@map("tenants")
 }
@@ -67,6 +70,7 @@ model User {
   onboardingTasks     EmployeeOnboardingTask[]
   documents           EmployeeDocument[]
   assignedTerritories Territory[]              @relation("RepTerritories")
+  assignedChatConversations ChatConversation[] @relation("CsrConversations")
 
   @@map("users")
 }
@@ -149,6 +153,7 @@ model Customer {
   healthScore        CustomerHealthScore?
   agreements         ServiceAgreement[]
   AutomatedFollowup  AutomatedFollowup[]
+  chatConversations  ChatConversation[]
 
   @@map("customers")
 }
@@ -721,3 +726,51 @@ model DoNotKnockRecord {
 
   @@map("do_not_knock_records")
 }
+
+model ChatConversation {
+  id            String        @id @default(uuid()) @db.Uuid
+  tenantId      String        @map("tenant_id") @db.Uuid
+  tenant        Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customerId    String        @map("customer_id") @db.Uuid
+  customer      Customer      @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  assignedCsrId String?       @map("assigned_csr_id") @db.Uuid
+  assignedCsr   User?         @relation("CsrConversations", fields: [assignedCsrId], references: [id], onDelete: SetNull)
+  status        String        @default("OPEN") @db.VarChar(50)
+  subject       String?       @db.VarChar(255)
+  lastMessageAt DateTime      @default(now()) @map("last_message_at")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @default(now()) @map("updated_at")
+  messages      ChatMessage[]
+
+  @@map("chat_conversations")
+}
+
+model ChatMessage {
+  id             String           @id @default(uuid()) @db.Uuid
+  tenantId       String           @map("tenant_id") @db.Uuid
+  tenant         Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  conversationId String           @map("conversation_id") @db.Uuid
+  conversation   ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderType     String           @map("sender_type") @db.VarChar(50)
+  senderId       String?          @map("sender_id") @db.Uuid
+  senderName     String?          @map("sender_name") @db.VarChar(255)
+  messageText    String           @map("message_text") @db.Text
+  isRead         Boolean          @default(false) @map("is_read")
+  createdAt      DateTime         @default(now()) @map("created_at")
+
+  @@map("chat_messages")
+}
+
+model CannedResponse {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  shortcut  String   @db.VarChar(50)
+  title     String   @db.VarChar(255)
+  category  String   @default("GENERAL") @db.VarChar(100)
+  content   String   @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("canned_responses")
+}
+

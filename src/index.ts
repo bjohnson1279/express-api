@@ -24,6 +24,7 @@ import { startHealthScoreCron } from './domains/crm/HealthScoreCron';
 // Domain: Communications
 import twilioRoutes from './domains/comms/twilioRoutes';
 import eventRoutes from './domains/comms/eventRoutes';
+import chatRoutes from './domains/comms/chatRoutes';
 import { startNotificationCron } from './domains/comms/NotificationCron';
 
 // Domain: Sales
@@ -70,6 +71,7 @@ app.use('/api/v1/properties', propertyRoutes);
 // === Communications Domain ===
 app.use('/api/webhooks/twilio', twilioRoutes);
 app.use('/api/events', eventRoutes);
+app.use('/api/v1/comms/chat', chatRoutes);
 
 // === Sales Domain ===
 app.use('/api/v1/sales', verifyToken, requireRole(['SUPER_ADMIN', 'DOOR_TO_DOOR_SALES', 'MANAGER']), canvassRoutes);
