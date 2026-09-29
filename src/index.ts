@@ -30,6 +30,7 @@ import { startNotificationCron } from './domains/comms/NotificationCron';
 import canvassRoutes from './domains/sales/canvassRoutes';
 import agreementRoutes from './domains/sales/agreementRoutes';
 import marketingRoutes from './domains/sales/marketingRoutes';
+import territoryRoutes from './domains/sales/territoryRoutes';
 import { startFollowUpCron } from './domains/sales/FollowUpCron';
 
 // Domain: HR
@@ -72,6 +73,7 @@ app.use('/api/events', eventRoutes);
 
 // === Sales Domain ===
 app.use('/api/v1/sales', verifyToken, requireRole(['SUPER_ADMIN', 'DOOR_TO_DOOR_SALES', 'MANAGER']), canvassRoutes);
+app.use('/api/v1/sales/territories', verifyToken, requireRole(['SUPER_ADMIN', 'DOOR_TO_DOOR_SALES', 'MANAGER']), territoryRoutes);
 app.use('/api/v1/agreements', agreementRoutes);
 app.use('/api/v1/marketing', verifyToken, requireRole(['SUPER_ADMIN', 'MANAGER']), marketingRoutes);
 
