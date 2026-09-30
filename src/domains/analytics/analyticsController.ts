@@ -69,3 +69,41 @@ export const getDashboardAnalytics = async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+
+import { PestRiskService } from './pestRiskService';
+
+export const getPropertyPestRisk = async (req: Request, res: Response) => {
+  try {
+    const { propertyId } = req.params;
+    const tenantId = (req as any).tenantId || req.headers['x-tenant-id'] || '3fa85f64-5717-4562-b3fc-2c963f66afa6';
+
+    const prediction = await PestRiskService.calculatePropertyRisk(propertyId, String(tenantId));
+    res.json(prediction);
+  } catch (error: any) {
+    console.error('Error calculating pest risk:', error);
+    res.status(500).json({ error: error.message || 'Internal server error' });
+  }
+};
+
+export const getPestRiskHeatmap = async (req: Request, res: Response) => {
+  try {
+    const tenantId = (req as any).tenantId || req.headers['x-tenant-id'] || '3fa85f64-5717-4562-b3fc-2c963f66afa6';
+    const heatmap = await PestRiskService.getHeatmapData(String(tenantId));
+    res.json(heatmap);
+  } catch (error: any) {
+    console.error('Error fetching pest risk heatmap:', error);
+    res.status(500).json({ error: error.message || 'Internal server error' });
+  }
+};
+
+export const recalculatePestRisks = async (req: Request, res: Response) => {
+  try {
+    const tenantId = (req as any).tenantId || req.headers['x-tenant-id'] || '3fa85f64-5717-4562-b3fc-2c963f66afa6';
+    const heatmap = await PestRiskService.getHeatmapData(String(tenantId));
+    res.json({ success: true, count: heatmap.length, records: heatmap });
+  } catch (error: any) {
+    console.error('Error recalculating pest risks:', error);
+    res.status(500).json({ error: error.message || 'Internal server error' });
+  }
+};
+

@@ -34,6 +34,7 @@ model Tenant {
   chatConversations    ChatConversation[]
   chatMessages         ChatMessage[]
   cannedResponses      CannedResponse[]
+  pestRiskScores       PropertyPestRiskScore[]
 
   @@map("tenants")
 }
@@ -179,6 +180,8 @@ model Property {
   city          String?            @db.VarChar(100)
   state         String?            @db.VarChar(100)
   zipCode       String?            @map("zip_code") @db.VarChar(20)
+  lat           Decimal?           @default(39.7817) @db.Decimal(10, 7)
+  lng           Decimal?           @default(-89.6501) @db.Decimal(10, 7)
   createdAt     DateTime           @default(now()) @map("created_at")
   updatedAt     DateTime           @default(now()) @map("updated_at")
   jobs          Job[]
@@ -187,6 +190,7 @@ model Property {
   quotes        Quote[]
   agreements    ServiceAgreement[]
   photos        PropertyPhoto[]
+  pestRiskScores PropertyPestRiskScore[]
 
   @@map("properties")
 }
@@ -773,4 +777,28 @@ model CannedResponse {
 
   @@map("canned_responses")
 }
+
+model PropertyPestRiskScore {
+  id                         String   @id @default(uuid()) @db.Uuid
+  tenantId                   String   @map("tenant_id") @db.Uuid
+  tenant                     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  propertyId                 String   @map("property_id") @db.Uuid
+  property                   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  overallRiskScore           Int      @map("overall_risk_score")
+  riskLevel                  String   @map("risk_level") @db.VarChar(50)
+  primaryTargetPest          String   @map("primary_target_pest") @db.VarChar(100)
+  resurgenceProbability      Decimal  @map("resurgence_probability") @db.Decimal(5, 2)
+  daysToProjectedResurgence  Int      @map("days_to_projected_resurgence")
+  weatherRiskFactor          Decimal  @default(1.00) @map("weather_risk_factor") @db.Decimal(5, 2)
+  chemicalDecayFactor        Decimal  @default(1.00) @map("chemical_decay_factor") @db.Decimal(5, 2)
+  seasonalVector             String   @map("seasonal_vector") @db.VarChar(50)
+  recommendedTreatment       String   @map("recommended_treatment") @db.Text
+  upsellRecommendation      String?  @map("upsell_recommendation") @db.Text
+  calculatedAt               DateTime @default(now()) @map("calculated_at")
+  createdAt                  DateTime @default(now()) @map("created_at")
+  updatedAt                  DateTime @default(now()) @map("updated_at")
+
+  @@map("property_pest_risk_scores")
+}
+
 
