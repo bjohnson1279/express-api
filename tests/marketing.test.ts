@@ -1,6 +1,6 @@
 import request from 'supertest';
 import express from 'express';
-import marketingRoutes from '../src/routes/marketingRoutes';
+import marketingRoutes from '../src/domains/sales/marketingRoutes';
 
 // Mock Prisma
 jest.mock('@prisma/client', () => {

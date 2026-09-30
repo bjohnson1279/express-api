@@ -1,6 +1,6 @@
 import request from 'supertest';
 import express from 'express';
-import jobRoutes from '../src/routes/jobRoutes';
+import jobRoutes from '../src/domains/dispatch/jobRoutes';
 
 // Mock Prisma ORM to prevent actual database calls during unit testing
 jest.mock('@prisma/client', () => {

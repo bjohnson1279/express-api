@@ -1,6 +1,6 @@
 import request from 'supertest';
 import express from 'express';
-import inventoryRoutes from '../src/routes/inventoryRoutes';
+import inventoryRoutes from '../src/domains/dispatch/inventoryRoutes';
 
 // Mock Prisma
 jest.mock('@prisma/client', () => {

@@ -16,7 +16,9 @@ router.post('/items', createInventoryItem);
 router.patch('/items/:id/quantity', updateInventoryQuantity);
 
 router.get('/orders', getPurchaseOrders);
+router.get('/purchase-orders', getPurchaseOrders);
 router.post('/orders', createPurchaseOrder);
+router.post('/purchase-orders', createPurchaseOrder);
 
 // Chemical logging & EPA Compliance
 router.post('/chemical-logs', recordChemicalApplication);

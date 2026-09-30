@@ -1,6 +1,6 @@
 import request from 'supertest';
 import express from 'express';
-import financeRoutes from '../src/routes/financeRoutes';
+import financeRoutes from '../src/domains/billing/financeRoutes';
 
 jest.mock('@prisma/client', () => {
   const mPrismaClient = {
