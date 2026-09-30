@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { ClimateService, ClimateData } from './ClimateService';
 
 const prisma = new PrismaClient();
 
@@ -22,6 +23,11 @@ export interface PestRiskPrediction {
     lastChemicalUsed: string;
     weatherConditionSummary: string;
     propertyVulnerability: string;
+    temperature?: number;
+    humidity?: number;
+    precipitation?: number;
+    windSpeed?: number;
+    climateSource?: string;
   };
 }
 
@@ -91,22 +97,39 @@ export class PestRiskService {
       chemicalDecayFactor = 1.55; // complete residual breakdown
     }
 
-    // 3. Seasonal vector & weather factor
+    const lat = property.lat ? Number(property.lat) : 39.7817;
+    const lng = property.lng ? Number(property.lng) : -89.6501;
+
+    // 3. Live Climate API integration & Seasonal vector
     const currentMonth = now.getMonth();
     const { vector: seasonalVector, factor: seasonalFactor } = this.getSeasonalVector(currentMonth);
 
-    // Weather condition analysis
+    const climate = await ClimateService.getClimateData(lat, lng);
+
     let weatherFactor = seasonalFactor;
-    let weatherSummary = 'Seasonal ambient baseline';
-    if (latestLog?.weatherConditions && typeof latestLog.weatherConditions === 'object') {
-      const weather = latestLog.weatherConditions as any;
-      if (weather.humidity && weather.humidity > 70) {
-        weatherFactor *= 1.15;
-        weatherSummary = `High humidity (${weather.humidity}%) accelerating reproductive cycles`;
-      } else if (weather.temperature && weather.temperature > 85) {
-        weatherFactor *= 1.20;
-        weatherSummary = `High heat index (${weather.temperature}°F) driving subterranean emergence`;
-      }
+    let weatherSummary = `Live Climate (${climate.source}): ${climate.temperature.toFixed(1)}°F, ${climate.relativeHumidity.toFixed(0)}% humidity, ${climate.conditionSummary}`;
+
+    if (climate.relativeHumidity >= 70) {
+      weatherFactor *= 1.18;
+      weatherSummary += ` | High humidity accelerating pest emergence`;
+    } else if (climate.relativeHumidity <= 35) {
+      weatherFactor *= 1.05;
+      weatherSummary += ` | Low humidity driving pests to indoor water sources`;
+    }
+
+    if (climate.temperature >= 85) {
+      weatherFactor *= 1.22;
+      weatherSummary += ` | High heat index driving subterranean swarming`;
+    } else if (climate.temperature <= 50) {
+      weatherFactor *= 1.15;
+      weatherSummary += ` | Low outdoor temp driving rodent/roach intrusion`;
+    } else {
+      weatherFactor *= 1.10;
+    }
+
+    if (climate.precipitation >= 0.20) {
+      chemicalDecayFactor *= 1.25;
+      weatherSummary += ` | Rainfall (${climate.precipitation.toFixed(2)} in) degrading exterior barrier`;
     }
 
     // 4. Target pest determination & base severity
@@ -168,9 +191,6 @@ export class PestRiskService {
       ? 'Annual Termite Bait Station Monitoring & Sub-Slab Moisture Barrier Installation.'
       : 'Quarterly Interior/Exterior Pest Defense Bundle with Rodent Bait Station Upgrade.';
 
-    const lat = property.lat ? Number(property.lat) : 39.7817;
-    const lng = property.lng ? Number(property.lng) : -89.6501;
-
     // Persist or upsert cached score
     await prisma.propertyPestRiskScore.create({
       data: {
@@ -209,7 +229,12 @@ export class PestRiskService {
         daysSinceLastTreatment,
         lastChemicalUsed: latestLog?.chemicalName || 'None logged (unprotected)',
         weatherConditionSummary: weatherSummary,
-        propertyVulnerability: vulnerabilitySummary
+        propertyVulnerability: vulnerabilitySummary,
+        temperature: climate.temperature,
+        humidity: climate.relativeHumidity,
+        precipitation: climate.precipitation,
+        windSpeed: climate.windSpeed,
+        climateSource: climate.source,
       }
     };
   }

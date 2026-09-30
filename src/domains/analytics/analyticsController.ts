@@ -70,7 +70,22 @@ export const getDashboardAnalytics = async (req: Request, res: Response) => {
   }
 };
 
-import { PestRiskService } from './pestRiskService';
+import { PestRiskService } from './PestRiskService';
+import { ClimateService } from './ClimateService';
+
+export const getClimateMetrics = async (req: Request, res: Response) => {
+  try {
+    const lat = req.query.lat ? parseFloat(String(req.query.lat)) : 39.7817;
+    const lng = req.query.lng ? parseFloat(String(req.query.lng)) : -89.6501;
+
+    const climate = await ClimateService.getClimateData(lat, lng);
+    res.json(climate);
+  } catch (error: any) {
+    console.error('Error fetching climate data:', error);
+    res.status(500).json({ error: error.message || 'Internal server error' });
+  }
+};
+
 
 export const getPropertyPestRisk = async (req: Request, res: Response) => {
   try {
