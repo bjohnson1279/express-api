@@ -7,7 +7,7 @@
     "start": "node dist/index.js",
     "dev": "nodemon src/index.ts",
     "prisma:generate": "prisma generate",
-    "test": "jest"
+    "test": "jest --forceExit"
   },
   "dependencies": {
     "@fastify/express": "^4.0.7",
