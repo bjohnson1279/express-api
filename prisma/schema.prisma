@@ -8,11 +8,11 @@ datasource db {
 }
 
 model Tenant {
-  id                   String                @id @default(uuid()) @db.Uuid
-  name                 String                @db.VarChar(255)
-  businessHours        Json?                 @map("business_hours")
-  createdAt            DateTime              @default(now()) @map("created_at")
-  updatedAt            DateTime              @default(now()) @map("updated_at")
+  id                   String                  @id @default(uuid()) @db.Uuid
+  name                 String                  @db.VarChar(255)
+  businessHours        Json?                   @map("business_hours")
+  createdAt            DateTime                @default(now()) @map("created_at")
+  updatedAt            DateTime                @default(now()) @map("updated_at")
   users                User[]
   jobs                 Job[]
   routes               Route[]
@@ -35,6 +35,9 @@ model Tenant {
   chatMessages         ChatMessage[]
   cannedResponses      CannedResponse[]
   pestRiskScores       PropertyPestRiskScore[]
+  ApiUsageMetric       ApiUsageMetric[]
+  AuditLog             AuditLog[]
+  Survey               Survey[]
 
   @@map("tenants")
 }
@@ -52,26 +55,27 @@ enum Role {
 }
 
 model User {
-  id              String                   @id @default(uuid()) @db.Uuid
-  tenantId        String                   @map("tenant_id") @db.Uuid
-  tenant          Tenant                   @relation(fields: [tenantId], references: [id])
-  email           String                   @unique @db.VarChar(255)
-  passwordHash    String                   @map("password_hash") @db.VarChar(255)
-  role            Role
-  createdAt       DateTime                 @default(now()) @map("created_at")
-  updatedAt       DateTime                 @default(now()) @map("updated_at")
-  technician      Technician?
-  customer        Customer?
-  notifications   Notification[]
-  certifications  EmployeeCertification[]
-  canvassPins     CanvassPin[]
-  commissions     Commission[]
-  contactLogs     ContactLog[]
-  internalNotes   InternalNote[]
-  onboardingTasks     EmployeeOnboardingTask[]
-  documents           EmployeeDocument[]
-  assignedTerritories Territory[]              @relation("RepTerritories")
-  assignedChatConversations ChatConversation[] @relation("CsrConversations")
+  id                        String                   @id @default(uuid()) @db.Uuid
+  tenantId                  String                   @map("tenant_id") @db.Uuid
+  tenant                    Tenant                   @relation(fields: [tenantId], references: [id])
+  email                     String                   @unique @db.VarChar(255)
+  passwordHash              String                   @map("password_hash") @db.VarChar(255)
+  role                      Role
+  createdAt                 DateTime                 @default(now()) @map("created_at")
+  updatedAt                 DateTime                 @default(now()) @map("updated_at")
+  technician                Technician?
+  customer                  Customer?
+  notifications             Notification[]
+  certifications            EmployeeCertification[]
+  canvassPins               CanvassPin[]
+  commissions               Commission[]
+  contactLogs               ContactLog[]
+  internalNotes             InternalNote[]
+  onboardingTasks           EmployeeOnboardingTask[]
+  documents                 EmployeeDocument[]
+  assignedTerritories       Territory[]              @relation("RepTerritories")
+  assignedChatConversations ChatConversation[]       @relation("CsrConversations")
+  AuditLog                  AuditLog[]
 
   @@map("users")
 }
@@ -128,33 +132,36 @@ model Technician {
   routes             Route[]
   restrictions       CustomerTechnicianRestriction[]
   chemicalLogs       ChemicalApplicationLog[]
+  Survey             Survey[]
 
   @@map("technicians")
 }
 
 model Customer {
-  id                 String                          @id @default(uuid()) @db.Uuid
-  userId             String                          @unique @map("user_id") @db.Uuid
-  user               User                            @relation(fields: [userId], references: [id])
-  name               String                          @db.VarChar(255)
-  billingPreferences Json?                           @map("billing_preferences")
-  createdAt          DateTime                        @default(now()) @map("created_at")
-  updatedAt          DateTime                        @default(now()) @map("updated_at")
-  properties         Property[]
-  jobs               Job[]
-  restrictions       CustomerTechnicianRestriction[]
-  contracts          ServiceContract[]
-  contactLogs        ContactLog[]
-  internalNotes      InternalNote[]
-  phones             CustomerPhone[]
-  emails             CustomerEmail[]
-  notificationQueue  NotificationQueue[]
-  quotes             Quote[]
-  payments           Payment[]
-  healthScore        CustomerHealthScore?
-  agreements         ServiceAgreement[]
-  AutomatedFollowup  AutomatedFollowup[]
-  chatConversations  ChatConversation[]
+  id                     String                          @id @default(uuid()) @db.Uuid
+  userId                 String                          @unique @map("user_id") @db.Uuid
+  user                   User                            @relation(fields: [userId], references: [id])
+  name                   String                          @db.VarChar(255)
+  billingPreferences     Json?                           @map("billing_preferences")
+  createdAt              DateTime                        @default(now()) @map("created_at")
+  updatedAt              DateTime                        @default(now()) @map("updated_at")
+  properties             Property[]
+  jobs                   Job[]
+  restrictions           CustomerTechnicianRestriction[]
+  contracts              ServiceContract[]
+  contactLogs            ContactLog[]
+  internalNotes          InternalNote[]
+  phones                 CustomerPhone[]
+  emails                 CustomerEmail[]
+  notificationQueue      NotificationQueue[]
+  quotes                 Quote[]
+  payments               Payment[]
+  healthScore            CustomerHealthScore?
+  agreements             ServiceAgreement[]
+  AutomatedFollowup      AutomatedFollowup[]
+  chatConversations      ChatConversation[]
+  NotificationPreference NotificationPreference?
+  Survey                 Survey[]
 
   @@map("customers")
 }
@@ -173,23 +180,23 @@ model CustomerTechnicianRestriction {
 }
 
 model Property {
-  id            String             @id @default(uuid()) @db.Uuid
-  customerId    String             @map("customer_id") @db.Uuid
-  customer      Customer           @relation(fields: [customerId], references: [id])
-  address       String             @db.VarChar(255)
-  city          String?            @db.VarChar(100)
-  state         String?            @db.VarChar(100)
-  zipCode       String?            @map("zip_code") @db.VarChar(20)
-  lat           Decimal?           @default(39.7817) @db.Decimal(10, 7)
-  lng           Decimal?           @default(-89.6501) @db.Decimal(10, 7)
-  createdAt     DateTime           @default(now()) @map("created_at")
-  updatedAt     DateTime           @default(now()) @map("updated_at")
-  jobs          Job[]
-  contracts     ServiceContract[]
-  internalNotes InternalNote[]
-  quotes        Quote[]
-  agreements    ServiceAgreement[]
-  photos        PropertyPhoto[]
+  id             String                  @id @default(uuid()) @db.Uuid
+  customerId     String                  @map("customer_id") @db.Uuid
+  customer       Customer                @relation(fields: [customerId], references: [id])
+  address        String                  @db.VarChar(255)
+  city           String?                 @db.VarChar(100)
+  state          String?                 @db.VarChar(100)
+  zipCode        String?                 @map("zip_code") @db.VarChar(20)
+  lat            Decimal?                @default(39.7817) @db.Decimal(10, 7)
+  lng            Decimal?                @default(-89.6501) @db.Decimal(10, 7)
+  createdAt      DateTime                @default(now()) @map("created_at")
+  updatedAt      DateTime                @default(now()) @map("updated_at")
+  jobs           Job[]
+  contracts      ServiceContract[]
+  internalNotes  InternalNote[]
+  quotes         Quote[]
+  agreements     ServiceAgreement[]
+  photos         PropertyPhoto[]
   pestRiskScores PropertyPestRiskScore[]
 
   @@map("properties")
@@ -262,21 +269,22 @@ model Job {
   chemicalLogs      ChemicalApplicationLog[]
   notificationQueue NotificationQueue[]
   photos            PropertyPhoto[]
+  Survey            Survey[]
 
   @@map("jobs")
 }
 
 model ChemicalApplicationLog {
-  id                String     @id @default(uuid()) @db.Uuid
-  jobId             String     @map("job_id") @db.Uuid
-  job               Job        @relation(fields: [jobId], references: [id])
-  technicianId      String     @map("technician_id") @db.Uuid
-  technician        Technician @relation(fields: [technicianId], references: [id])
-  chemicalName      String     @map("chemical_name") @db.VarChar(255)
-  quantityUsed      Decimal    @map("quantity_used") @db.Decimal(10, 2)
-  unit              String     @db.VarChar(50)
-  targetPests       Json?      @map("target_pests")
-  weatherConditions Json?      @map("weather_conditions")
+  id                String         @id @default(uuid()) @db.Uuid
+  jobId             String         @map("job_id") @db.Uuid
+  job               Job            @relation(fields: [jobId], references: [id])
+  technicianId      String         @map("technician_id") @db.Uuid
+  technician        Technician     @relation(fields: [technicianId], references: [id])
+  chemicalName      String         @map("chemical_name") @db.VarChar(255)
+  quantityUsed      Decimal        @map("quantity_used") @db.Decimal(10, 2)
+  unit              String         @db.VarChar(50)
+  targetPests       Json?          @map("target_pests")
+  weatherConditions Json?          @map("weather_conditions")
   appliedAt         DateTime       @default(now()) @map("applied_at")
   photoUrl          String?        @map("photo_url")
   inventoryItemId   String?        @map("inventory_item_id") @db.Uuid
@@ -336,21 +344,21 @@ enum LeadStatus {
 }
 
 model CanvassPin {
-  id           String      @id @default(uuid()) @db.Uuid
-  tenantId     String      @map("tenant_id") @db.Uuid
-  tenant       Tenant      @relation(fields: [tenantId], references: [id])
-  salesRepId   String      @map("sales_rep_id") @db.Uuid
-  salesRep     User        @relation(fields: [salesRepId], references: [id])
-  territoryId  String?     @map("territory_id") @db.Uuid
-  territory    Territory?  @relation(fields: [territoryId], references: [id])
-  isDoNotKnock Boolean     @default(false) @map("is_do_not_knock")
-  lat          Decimal     @db.Decimal(10, 7)
-  lng          Decimal     @db.Decimal(10, 7)
-  address      String?     @db.VarChar(255)
+  id           String     @id @default(uuid()) @db.Uuid
+  tenantId     String     @map("tenant_id") @db.Uuid
+  tenant       Tenant     @relation(fields: [tenantId], references: [id])
+  salesRepId   String     @map("sales_rep_id") @db.Uuid
+  salesRep     User       @relation(fields: [salesRepId], references: [id])
+  territoryId  String?    @map("territory_id") @db.Uuid
+  territory    Territory? @relation(fields: [territoryId], references: [id])
+  isDoNotKnock Boolean    @default(false) @map("is_do_not_knock")
+  lat          Decimal    @db.Decimal(10, 7)
+  lng          Decimal    @db.Decimal(10, 7)
+  address      String?    @db.VarChar(255)
   status       LeadStatus
-  notes        String?     @db.Text
-  createdAt    DateTime    @default(now()) @map("created_at")
-  updatedAt    DateTime    @default(now()) @map("updated_at")
+  notes        String?    @db.Text
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @default(now()) @map("updated_at")
 
   @@map("canvass_pins")
 }
@@ -663,17 +671,17 @@ model AutomatedFollowup {
 }
 
 model InventoryItem {
-  id               String          @id @default(uuid()) @db.Uuid
-  tenantId         String          @map("tenant_id") @db.Uuid
-  tenant           Tenant          @relation(fields: [tenantId], references: [id])
-  name             String          @db.VarChar(255)
-  sku              String          @db.VarChar(100)
-  quantity         Int             @default(0)
-  minimumThreshold Int             @default(10) @map("minimum_threshold")
-  unitCost         Decimal?        @map("unit_cost") @db.Decimal(10, 2)
-  location         String?         @db.VarChar(255)
-  createdAt        DateTime        @default(now()) @map("created_at")
-  updatedAt        DateTime        @default(now()) @map("updated_at")
+  id               String                   @id @default(uuid()) @db.Uuid
+  tenantId         String                   @map("tenant_id") @db.Uuid
+  tenant           Tenant                   @relation(fields: [tenantId], references: [id])
+  name             String                   @db.VarChar(255)
+  sku              String                   @db.VarChar(100)
+  quantity         Int                      @default(0)
+  minimumThreshold Int                      @default(10) @map("minimum_threshold")
+  unitCost         Decimal?                 @map("unit_cost") @db.Decimal(10, 2)
+  location         String?                  @db.VarChar(255)
+  createdAt        DateTime                 @default(now()) @map("created_at")
+  updatedAt        DateTime                 @default(now()) @map("updated_at")
   purchaseOrders   PurchaseOrder[]
   chemicalLogs     ChemicalApplicationLog[]
 
@@ -779,26 +787,111 @@ model CannedResponse {
 }
 
 model PropertyPestRiskScore {
-  id                         String   @id @default(uuid()) @db.Uuid
-  tenantId                   String   @map("tenant_id") @db.Uuid
-  tenant                     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  propertyId                 String   @map("property_id") @db.Uuid
-  property                   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  overallRiskScore           Int      @map("overall_risk_score")
-  riskLevel                  String   @map("risk_level") @db.VarChar(50)
-  primaryTargetPest          String   @map("primary_target_pest") @db.VarChar(100)
-  resurgenceProbability      Decimal  @map("resurgence_probability") @db.Decimal(5, 2)
-  daysToProjectedResurgence  Int      @map("days_to_projected_resurgence")
-  weatherRiskFactor          Decimal  @default(1.00) @map("weather_risk_factor") @db.Decimal(5, 2)
-  chemicalDecayFactor        Decimal  @default(1.00) @map("chemical_decay_factor") @db.Decimal(5, 2)
-  seasonalVector             String   @map("seasonal_vector") @db.VarChar(50)
-  recommendedTreatment       String   @map("recommended_treatment") @db.Text
+  id                        String   @id @default(uuid()) @db.Uuid
+  tenantId                  String   @map("tenant_id") @db.Uuid
+  tenant                    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  propertyId                String   @map("property_id") @db.Uuid
+  property                  Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  overallRiskScore          Int      @map("overall_risk_score")
+  riskLevel                 String   @map("risk_level") @db.VarChar(50)
+  primaryTargetPest         String   @map("primary_target_pest") @db.VarChar(100)
+  resurgenceProbability     Decimal  @map("resurgence_probability") @db.Decimal(5, 2)
+  daysToProjectedResurgence Int      @map("days_to_projected_resurgence")
+  weatherRiskFactor         Decimal  @default(1.00) @map("weather_risk_factor") @db.Decimal(5, 2)
+  chemicalDecayFactor       Decimal  @default(1.00) @map("chemical_decay_factor") @db.Decimal(5, 2)
+  seasonalVector            String   @map("seasonal_vector") @db.VarChar(50)
+  recommendedTreatment      String   @map("recommended_treatment") @db.Text
   upsellRecommendation      String?  @map("upsell_recommendation") @db.Text
-  calculatedAt               DateTime @default(now()) @map("calculated_at")
-  createdAt                  DateTime @default(now()) @map("created_at")
-  updatedAt                  DateTime @default(now()) @map("updated_at")
+  calculatedAt              DateTime @default(now()) @map("calculated_at")
+  createdAt                 DateTime @default(now()) @map("created_at")
+  updatedAt                 DateTime @default(now()) @map("updated_at")
 
   @@map("property_pest_risk_scores")
 }
 
+// Feature #17
+model ApiUsageMetric {
+  id           String   @id @default(uuid()) @db.Uuid
+  tenantId     String   @map("tenant_id") @db.Uuid
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  endpoint     String   @db.VarChar(255)
+  method       String   @db.VarChar(10)
+  date         DateTime @db.Date
+  requestCount Int      @default(0) @map("request_count")
+  createdAt    DateTime @default(now()) @map("created_at")
 
+  @@unique([tenantId, endpoint, method, date])
+  @@index([date])
+  @@map("api_usage_metrics")
+}
+
+// Feature #18
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  tenantId   String   @map("tenant_id") @db.Uuid
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  actorId    String?  @map("actor_id") @db.Uuid
+  actor      User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  actorRole  String?  @map("actor_role") @db.VarChar(50)
+  action     String   @db.VarChar(50)
+  entityType String   @map("entity_type") @db.VarChar(100)
+  entityId   String   @map("entity_id") @db.Uuid
+  oldValues  Json?    @map("old_values")
+  newValues  Json?    @map("new_values")
+  ipAddress  String?  @map("ip_address") @db.VarChar(45)
+  userAgent  String?  @map("user_agent") @db.Text
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([entityType, entityId])
+  @@index([tenantId, createdAt(sort: Desc)])
+  @@map("audit_logs")
+}
+
+// Feature #19
+model NotificationPreference {
+  id              String    @id @default(uuid()) @db.Uuid
+  customerId      String    @unique @map("customer_id") @db.Uuid
+  customer        Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  smsEnabled      Boolean   @default(true) @map("sms_enabled")
+  emailEnabled    Boolean   @default(true) @map("email_enabled")
+  voiceEnabled    Boolean   @default(false) @map("voice_enabled")
+  pushEnabled     Boolean   @default(false) @map("push_enabled")
+  quietHoursStart DateTime? @map("quiet_hours_start") @db.Time
+  quietHoursEnd   DateTime? @map("quiet_hours_end") @db.Time
+  optOutTimestamp DateTime? @map("opt_out_timestamp")
+  tcpaConsentDate DateTime? @map("tcpa_consent_date")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @default(now()) @map("updated_at")
+
+  @@map("notification_preferences")
+}
+
+// Feature #20
+model Survey {
+  id           String          @id @default(uuid()) @db.Uuid
+  tenantId     String          @map("tenant_id") @db.Uuid
+  tenant       Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customerId   String          @map("customer_id") @db.Uuid
+  customer     Customer        @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  jobId        String?         @map("job_id") @db.Uuid
+  job          Job?            @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  technicianId String?         @map("technician_id") @db.Uuid
+  technician   Technician?     @relation(fields: [technicianId], references: [id], onDelete: SetNull)
+  status       String          @default("sent") @db.VarChar(50)
+  sentAt       DateTime        @default(now()) @map("sent_at")
+  expiresAt    DateTime?       @map("expires_at")
+  response     SurveyResponse?
+
+  @@map("surveys")
+}
+
+model SurveyResponse {
+  id          String   @id @default(uuid()) @db.Uuid
+  surveyId    String   @unique @map("survey_id") @db.Uuid
+  survey      Survey   @relation(fields: [surveyId], references: [id], onDelete: Cascade)
+  npsScore    Int?     @map("nps_score")
+  comments    String?  @db.Text
+  respondedAt DateTime @default(now()) @map("responded_at")
+
+  @@map("survey_responses")
+}

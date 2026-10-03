@@ -42,6 +42,8 @@ import analyticsRoutes from './domains/analytics/analyticsRoutes';
 
 // Shared
 import { verifyToken, requireRole } from './shared/middleware/authMiddleware';
+import { apiLimiter } from './shared/middleware/rateLimiter';
+import { usageMetering } from './shared/middleware/usageMetering';
 
 dotenv.config();
 
@@ -50,8 +52,15 @@ const app = expressApp; // temp alias for routes
 
 const port = process.env.PORT || 8000;
 
+// Need trust proxy if behind load balancer/docker proxy
+app.set('trust proxy', 1);
+
 app.use(cors());
 app.use(express.json());
+
+// Apply rate limiting and usage metering globally to all API routes
+app.use('/api', apiLimiter);
+app.use('/api', usageMetering);
 
 // === Dispatch Domain ===
 app.use('/api/v1/jobs', verifyToken, jobRoutes);
