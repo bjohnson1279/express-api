@@ -32,18 +32,42 @@ export function startNotificationCron() {
         let errorLog = null;
 
         try {
+          // Check Customer Preferences first
+          const prefs = await prisma.notificationPreference.findUnique({
+            where: { customerId: notification.customerId }
+          });
+
+          // Default is true if no record exists
+          const smsEnabled = prefs?.smsEnabled ?? true;
+          const emailEnabled = prefs?.emailEnabled ?? true;
+          const voiceEnabled = prefs?.voiceEnabled ?? false;
+
+          let skipped = false;
+
           if (notification.channel === 'SMS') {
-            await notificationService.sendSMS(notification.contactTarget, notification.messageContent);
+            if (smsEnabled) {
+              await notificationService.sendSMS(notification.contactTarget, notification.messageContent);
+            } else { skipped = true; }
           } else if (notification.channel === 'VOICE') {
-            await notificationService.sendRobocall(notification.contactTarget, notification.messageContent);
+            if (voiceEnabled) {
+              await notificationService.sendRobocall(notification.contactTarget, notification.messageContent);
+            } else { skipped = true; }
           } else if (notification.channel === 'EMAIL') {
-            await notificationService.sendEmail(
-              notification.contactTarget,
-              'Servicing CRM Update',
-              notification.messageContent
-            );
+            if (emailEnabled) {
+              await notificationService.sendEmail(
+                notification.contactTarget,
+                'Servicing CRM Update',
+                notification.messageContent
+              );
+            } else { skipped = true; }
           }
-          success = true;
+          
+          if (skipped) {
+            errorLog = 'Opted out';
+            success = true; // Mark success but note they opted out
+          } else {
+            success = true;
+          }
         } catch (err: any) {
           errorLog = err.message;
         }
@@ -52,7 +76,7 @@ export function startNotificationCron() {
         await prisma.notificationQueue.update({
           where: { id: notification.id },
           data: {
-            status: success ? 'completed' : 'failed',
+            status: (success && errorLog === 'Opted out') ? 'skipped' : (success ? 'completed' : 'failed'),
             processedAt: new Date(),
             errorLog
           }
