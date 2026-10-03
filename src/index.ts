@@ -9,6 +9,7 @@ import technicianRoutes from './domains/dispatch/technicianRoutes';
 import dispatchRoutes from './domains/dispatch/dispatchRoutes';
 import routingRoutes from './domains/dispatch/routingRoutes';
 import inventoryRoutes from './domains/dispatch/inventoryRoutes';
+import bookingRoutes from './domains/dispatch/bookingRoutes';
 import { startJobGenerationCron } from './domains/dispatch/JobGenerationCron';
 import { startInventoryCron } from './domains/dispatch/InventoryCron';
 
@@ -19,6 +20,7 @@ import financeRoutes from './domains/billing/financeRoutes';
 import customerRoutes from './domains/crm/customerRoutes';
 import contractRoutes from './domains/crm/contractRoutes';
 import propertyRoutes from './domains/crm/propertyRoutes';
+import surveyRoutes from './domains/crm/surveyRoutes';
 import { startHealthScoreCron } from './domains/crm/HealthScoreCron';
 
 // Domain: Communications
@@ -70,6 +72,7 @@ app.use('/api/v1/technicians', verifyToken, technicianRoutes);
 app.use('/api/v1/dispatch', verifyToken, requireRole(['SUPER_ADMIN', 'DISPATCHER', 'MANAGER']), dispatchRoutes);
 app.use('/api/v1/routing', routingRoutes);
 app.use('/api/v1/inventory', verifyToken, requireRole(['SUPER_ADMIN', 'MANAGER']), inventoryRoutes);
+app.use('/api/v1/booking', bookingRoutes);
 
 // === Billing Domain ===
 app.use('/api/v1/finance', verifyToken, requireRole(['SUPER_ADMIN', 'MANAGER']), financeRoutes);
@@ -78,6 +81,7 @@ app.use('/api/v1/finance', verifyToken, requireRole(['SUPER_ADMIN', 'MANAGER']),
 app.use('/api/v1/customers', verifyToken, customerRoutes);
 app.use('/api/v1/contracts', verifyToken, contractRoutes);
 app.use('/api/v1/properties', propertyRoutes);
+app.use('/api/v1/surveys', surveyRoutes);
 
 // === Communications Domain ===
 app.use('/api/webhooks/twilio', twilioRoutes);

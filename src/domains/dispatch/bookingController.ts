@@ -1,0 +1,52 @@
+import { Request, Response } from 'express';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
+
+// GET /api/v1/booking/slots?date=YYYY-MM-DD
+export const getAvailableSlots = async (req: Request, res: Response) => {
+  try {
+    const { date } = req.query;
+    if (!date) return res.status(400).json({ error: 'Date is required' });
+
+    // Mock slots for now. In a real application, we'd query Jobs 
+    // for this date and ensure we have at least one Technician without overlap.
+    const slots = ["08:00", "10:00", "12:00", "14:00"];
+    const result = slots.map(time => ({ time, available: true }));
+    
+    res.json(result);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// POST /api/v1/booking
+export const createBooking = async (req: Request, res: Response) => {
+  try {
+    const { tenantId, customerId, propertyId, date, time } = req.body;
+    
+    if (!tenantId || !customerId || !propertyId || !date || !time) {
+      return res.status(400).json({ error: 'Missing required booking fields' });
+    }
+
+    const startDt = new Date(`${date}T${time}:00Z`);
+    const endDt = new Date(startDt.getTime() + 2 * 60 * 60 * 1000); // Assume 2-hour jobs
+
+    const job = await prisma.job.create({
+      data: {
+        tenantId,
+        customerId,
+        propertyId,
+        status: 'scheduled',
+        scheduledStart: startDt,
+        scheduledEnd: endDt
+      }
+    });
+
+    res.status(201).json(job);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
