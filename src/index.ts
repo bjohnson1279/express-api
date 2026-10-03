@@ -44,6 +44,7 @@ import analyticsRoutes from './domains/analytics/analyticsRoutes';
 import { verifyToken, requireRole } from './shared/middleware/authMiddleware';
 import { apiLimiter } from './shared/middleware/rateLimiter';
 import { usageMetering } from './shared/middleware/usageMetering';
+import { auditMiddleware } from './shared/middleware/auditMiddleware';
 
 dotenv.config();
 
@@ -61,6 +62,7 @@ app.use(express.json());
 // Apply rate limiting and usage metering globally to all API routes
 app.use('/api', apiLimiter);
 app.use('/api', usageMetering);
+app.use('/api', auditMiddleware);
 
 // === Dispatch Domain ===
 app.use('/api/v1/jobs', verifyToken, jobRoutes);
