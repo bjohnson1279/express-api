@@ -8,15 +8,25 @@ jest.mock('@prisma/client', () => {
 });
 
 import request from 'supertest';
-import express from 'express';
+import fastify from 'fastify';
 import bookingRoutes from '../src/domains/dispatch/bookingRoutes';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new (PrismaClient as any)();
 
-const app = express();
-app.use(express.json());
-app.use('/api/v1/booking', bookingRoutes);
+let fastifyApp: ReturnType<typeof fastify>;
+let app: any;
+
+beforeAll(async () => {
+  fastifyApp = fastify();
+  fastifyApp.register(bookingRoutes, { prefix: '/api/v1/booking' });
+  await fastifyApp.ready();
+  app = fastifyApp.server;
+});
+
+afterAll(async () => {
+  await fastifyApp.close();
+});
 
 describe('Booking API Controller', () => {
   beforeEach(() => {

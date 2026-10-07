@@ -23,15 +23,25 @@ jest.mock('@prisma/client', () => {
 });
 
 import request from 'supertest';
-import express from 'express';
+import fastify from 'fastify';
 import surveyRoutes from '../src/domains/crm/surveyRoutes';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new (PrismaClient as any)();
 
-const app = express();
-app.use(express.json());
-app.use('/api/v1/surveys', surveyRoutes);
+let fastifyApp: ReturnType<typeof fastify>;
+let app: any;
+
+beforeAll(async () => {
+  fastifyApp = fastify();
+  fastifyApp.register(surveyRoutes, { prefix: '/api/v1/surveys' });
+  await fastifyApp.ready();
+  app = fastifyApp.server;
+});
+
+afterAll(async () => {
+  await fastifyApp.close();
+});
 
 describe('Survey API Controller', () => {
   beforeEach(() => {

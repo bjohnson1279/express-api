@@ -7,18 +7,17 @@
     "start": "node dist/index.js",
     "dev": "nodemon src/index.ts",
     "prisma:generate": "prisma generate",
-    "test": "jest --forceExit --coverage",
-    "swagger": "ts-node swagger.ts"
+    "test": "jest --forceExit --coverage"
   },
   "dependencies": {
     "@fastify/cors": "^11.3.0",
+    "@fastify/formbody": "^9.0.0",
     "@fastify/multipart": "^10.1.2",
     "@fastify/rate-limit": "^11.2.0",
     "@fastify/swagger": "^9.9.1",
     "@fastify/swagger-ui": "^6.1.1",
     "@prisma/client": "^5.10.0",
     "dotenv": "^16.4.5",
-    "express-list-endpoints": "^7.1.1",
     "fastify": "^5.12.5",
     "ioredis": "^6.0.0",
     "json2csv": "^6.0.0-alpha.2",

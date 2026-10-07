@@ -1,20 +1,20 @@
-import { Response } from 'express';
+import { FastifyReply } from 'fastify';
 
 class EventBus {
-  private clients: Response[] = [];
+  private clients: FastifyReply[] = [];
 
-  subscribe(res: Response) {
-    this.clients.push(res);
+  subscribe(reply: FastifyReply) {
+    this.clients.push(reply);
   }
 
-  unsubscribe(res: Response) {
-    this.clients = this.clients.filter((client) => client !== res);
+  unsubscribe(reply: FastifyReply) {
+    this.clients = this.clients.filter((client) => client !== reply);
   }
 
   broadcast(eventType: string, payload: any) {
     const data = JSON.stringify({ type: eventType, payload });
     this.clients.forEach((client) => {
-      client.write(`data: ${data}\n\n`);
+      client.raw.write(`data: ${data}\n\n`);
     });
   }
 }

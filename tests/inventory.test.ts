@@ -1,5 +1,5 @@
 import request from 'supertest';
-import express from 'express';
+import fastify from 'fastify';
 import inventoryRoutes from '../src/domains/dispatch/inventoryRoutes';
 
 // Mock Prisma
@@ -28,15 +28,25 @@ jest.mock('@prisma/client', () => {
   return { PrismaClient: jest.fn(() => mPrismaClient) };
 });
 
-const app = express();
-app.use(express.json());
+let fastifyApp: ReturnType<typeof fastify>;
+let app: any;
 
-// Mock auth middleware
-app.use((req: any, res, next) => {
-  req.user = { id: 'admin', role: 'SUPER_ADMIN', tenantId: 'mock-tenant-id' };
-  next();
+beforeAll(async () => {
+  fastifyApp = fastify();
+  
+  // Mock auth middleware
+  fastifyApp.addHook('onRequest', async (req: any, reply: any) => {
+    req.user = { id: 'admin', role: 'SUPER_ADMIN', tenantId: 'mock-tenant-id' };
+  });
+  
+  fastifyApp.register(inventoryRoutes, { prefix: '/api/v1/inventory' });
+  await fastifyApp.ready();
+  app = fastifyApp.server;
 });
-app.use('/api/v1/inventory', inventoryRoutes);
+
+afterAll(async () => {
+  await fastifyApp.close();
+});
 
 describe('Inventory API Controller', () => {
   afterEach(() => {

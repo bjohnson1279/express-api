@@ -1,5 +1,5 @@
 import request from 'supertest';
-import express from 'express';
+import fastify from 'fastify';
 import financeRoutes from '../src/domains/billing/financeRoutes';
 
 jest.mock('@prisma/client', () => {
@@ -23,14 +23,25 @@ jest.mock('@prisma/client', () => {
   return { PrismaClient: jest.fn(() => mPrismaClient) };
 });
 
-const app = express();
-app.use(express.json());
-// Mock auth middleware for tests
-app.use((req: any, res, next) => {
-  req.user = { id: 'admin', role: 'SUPER_ADMIN', tenantId: 'mock-tenant-id' };
-  next();
+let fastifyApp: ReturnType<typeof fastify>;
+let app: any;
+
+beforeAll(async () => {
+  fastifyApp = fastify();
+  
+  // Mock auth middleware for tests
+  fastifyApp.addHook('onRequest', async (req: any, reply: any) => {
+    req.user = { id: 'admin', role: 'SUPER_ADMIN', tenantId: 'mock-tenant-id' };
+  });
+  
+  fastifyApp.register(financeRoutes, { prefix: '/api/v1/finance' });
+  await fastifyApp.ready();
+  app = fastifyApp.server;
 });
-app.use('/api/v1/finance', financeRoutes);
+
+afterAll(async () => {
+  await fastifyApp.close();
+});
 
 describe('Finance API Controller', () => {
   it('PATCH /api/v1/finance/quotes/:id/accept - should accept quote and create job', async () => {

@@ -1,12 +1,21 @@
 import request from 'supertest';
-import express from 'express';
-import { Request, Response } from 'express';
+import fastify from 'fastify';
 
-const app = express();
-app.get('/health', (req: Request, res: Response) => {
-  res.json({ status: 'ok', service: 'express-api' });
+let fastifyApp: ReturnType<typeof fastify>;
+let app: any;
+
+beforeAll(async () => {
+  fastifyApp = fastify();
+  fastifyApp.get('/health', async (req: any, reply: any) => {
+    reply.send({ status: 'ok', service: 'express-api' });
+  });
+  await fastifyApp.ready();
+  app = fastifyApp.server;
 });
 
+afterAll(async () => {
+  await fastifyApp.close();
+});
 describe('Health Check API', () => {
   it('should return status ok', async () => {
     const res = await request(app).get('/health');

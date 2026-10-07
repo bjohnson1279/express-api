@@ -1,5 +1,5 @@
 import request from 'supertest';
-import express from 'express';
+import fastify from 'fastify';
 import jobRoutes from '../src/domains/dispatch/jobRoutes';
 
 // Mock Prisma ORM to prevent actual database calls during unit testing
@@ -17,9 +17,19 @@ jest.mock('@prisma/client', () => {
   return { PrismaClient: jest.fn(() => mPrismaClient) };
 });
 
-const app = express();
-app.use(express.json());
-app.use('/api/v1/jobs', jobRoutes);
+let fastifyApp: ReturnType<typeof fastify>;
+let app: any;
+
+beforeAll(async () => {
+  fastifyApp = fastify();
+  fastifyApp.register(jobRoutes, { prefix: '/api/v1/jobs' });
+  await fastifyApp.ready();
+  app = fastifyApp.server;
+});
+
+afterAll(async () => {
+  await fastifyApp.close();
+});
 
 describe('Jobs API Controller', () => {
   it('GET /api/v1/jobs - should return list of jobs', async () => {

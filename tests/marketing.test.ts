@@ -1,5 +1,5 @@
 import request from 'supertest';
-import express from 'express';
+import fastify from 'fastify';
 import marketingRoutes from '../src/domains/sales/marketingRoutes';
 
 // Mock Prisma
@@ -17,15 +17,25 @@ jest.mock('@prisma/client', () => {
   return { PrismaClient: jest.fn(() => mPrismaClient) };
 });
 
-const app = express();
-app.use(express.json());
+let fastifyApp: ReturnType<typeof fastify>;
+let app: any;
 
-// Mock auth middleware
-app.use((req: any, res, next) => {
-  req.user = { id: 'admin', role: 'SUPER_ADMIN', tenantId: 'mock-tenant-id' };
-  next();
+beforeAll(async () => {
+  fastifyApp = fastify();
+  
+  // Mock auth middleware
+  fastifyApp.addHook('onRequest', async (req: any, reply: any) => {
+    req.user = { id: 'admin', role: 'SUPER_ADMIN', tenantId: 'mock-tenant-id' };
+  });
+  
+  fastifyApp.register(marketingRoutes, { prefix: '/api/v1/marketing' });
+  await fastifyApp.ready();
+  app = fastifyApp.server;
 });
-app.use('/api/v1/marketing', marketingRoutes);
+
+afterAll(async () => {
+  await fastifyApp.close();
+});
 
 describe('Marketing API Controller', () => {
   afterEach(() => {
