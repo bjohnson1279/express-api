@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient();
+const prisma: any = new PrismaClient();
 
 // POST /api/v1/surveys — Create and send a survey after service
 export const createSurvey = async (req: Request, res: Response) => {
@@ -161,19 +161,19 @@ export const npsDashboard = async (req: Request, res: Response) => {
       orderBy: { respondedAt: 'desc' }
     });
 
-    const scores = responses.filter(r => r.npsScore !== null).map(r => r.npsScore!);
+    const scores: number[] = (responses as any[]).filter((r: any) => r.npsScore !== null).map((r: any) => r.npsScore as number);
     const total = scores.length;
     
-    const promoters = scores.filter(s => s >= 9).length;
-    const passives = scores.filter(s => s >= 7 && s <= 8).length;
-    const detractors = scores.filter(s => s <= 6).length;
+    const promoters = scores.filter((s: number) => s >= 9).length;
+    const passives = scores.filter((s: number) => s >= 7 && s <= 8).length;
+    const detractors = scores.filter((s: number) => s <= 6).length;
     
     const npsScore = total > 0 ? Math.round(((promoters - detractors) / total) * 100) : 0;
-    const avgScore = total > 0 ? (scores.reduce((a, b) => a + b, 0) / total).toFixed(1) : '0.0';
+    const avgScore = total > 0 ? (scores.reduce((a: number, b: number) => a + b, 0) / total).toFixed(1) : '0.0';
 
     // Per-technician breakdown
     const techMap = new Map<string, { name: string; scores: number[] }>();
-    for (const r of responses) {
+    for (const r of (responses as any[])) {
       const tech = r.survey?.technician;
       if (tech && r.npsScore !== null) {
         const key = tech.id;
@@ -185,15 +185,15 @@ export const npsDashboard = async (req: Request, res: Response) => {
     }
 
     const technicianScores = Array.from(techMap.entries()).map(([id, data]) => {
-      const avg = data.scores.reduce((a, b) => a + b, 0) / data.scores.length;
+      const avg = data.scores.reduce((a: number, b: number) => a + b, 0) / data.scores.length;
       return { technicianId: id, name: data.name, avgScore: Number(avg.toFixed(1)), count: data.scores.length };
     }).sort((a, b) => b.avgScore - a.avgScore);
 
     // Recent responses with comments
-    const recentFeedback = responses
-      .filter(r => r.comments)
+    const recentFeedback = (responses as any[])
+      .filter((r: any) => r.comments)
       .slice(0, 10)
-      .map(r => ({
+      .map((r: any) => ({
         score: r.npsScore,
         comments: r.comments,
         customerName: r.survey?.customer?.name,

@@ -4,12 +4,16 @@ import {
   getPropertyPestRisk, 
   getPestRiskHeatmap, 
   recalculatePestRisks,
-  getClimateMetrics
+  getClimateMetrics,
+  getLaborCosts,
+  exportReport
 } from './analyticsController';
 
 const router = Router();
 
 router.get('/dashboard', getDashboardAnalytics);
+router.get('/labor-costs', getLaborCosts);
+router.get('/reports/export', exportReport);
 
 // AI Pest Risk Scoring & Heatmap
 router.get('/pest-risk/climate', getClimateMetrics);

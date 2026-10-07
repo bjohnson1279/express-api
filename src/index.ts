@@ -28,6 +28,7 @@ import twilioRoutes from './domains/comms/twilioRoutes';
 import eventRoutes from './domains/comms/eventRoutes';
 import chatRoutes from './domains/comms/chatRoutes';
 import { startNotificationCron } from './domains/comms/NotificationCron';
+import { startPreVisitNotificationCron } from './domains/comms/PreVisitNotificationCron';
 
 // Domain: Sales
 import canvassRoutes from './domains/sales/canvassRoutes';
@@ -103,10 +104,16 @@ app.use('/api/v1/analytics', verifyToken, analyticsRoutes);
 // Static files
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
+import { setupSwagger } from './swagger';
+
+// ... other imports above ...
 // Health Check
 app.get('/health', (req: Request, res: Response) => {
   res.json({ status: 'ok', service: 'express-api' });
 });
+
+// Setup Swagger UI
+setupSwagger(expressApp, 'Servicing CRM - Express API', 'http://localhost:8002');
 
 
 import fastifyLib from 'fastify';
@@ -125,6 +132,7 @@ async function startFastify() {
   
   // Start all domain crons
   startNotificationCron();
+  startPreVisitNotificationCron();
   startHealthScoreCron();
   startJobGenerationCron();
   startFollowUpCron();

@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
+import PDFDocument from 'pdfkit';
 
 const prisma = new PrismaClient();
 
@@ -122,3 +123,106 @@ export const recalculatePestRisks = async (req: Request, res: Response) => {
   }
 };
 
+export const getLaborCosts = async (req: Request, res: Response) => {
+  try {
+    const jobs = await prisma.job.findMany({
+      where: { status: 'completed', onSiteTimeMinutes: { not: null } },
+      include: { technician: { include: { user: true } } }
+    });
+
+    const laborAnalytics: Record<string, { technician: string, totalOnSiteMinutes: number, totalDriveMinutes: number, jobsCount: number }> = {};
+    
+    jobs.forEach(job => {
+      if (job.technician && job.technician.user) {
+        const id = job.technician.id;
+        if (!laborAnalytics[id]) {
+           laborAnalytics[id] = { technician: job.technician.user.email, totalOnSiteMinutes: 0, totalDriveMinutes: 0, jobsCount: 0 };
+        }
+        laborAnalytics[id].totalOnSiteMinutes += job.onSiteTimeMinutes || 0;
+        laborAnalytics[id].totalDriveMinutes += job.driveTimeMinutes || 0;
+        laborAnalytics[id].jobsCount += 1;
+      }
+    });
+
+    res.json(Object.values(laborAnalytics));
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+
+import { Parser } from 'json2csv';
+
+export const exportReport = async (req: Request, res: Response) => {
+  try {
+    const { format = 'csv', type = 'revenue' } = req.query;
+
+    let data: any[] = [];
+    if (type === 'productivity') {
+      const jobs = await prisma.job.findMany({ include: { technician: { include: { user: true }} } });
+      const stats: any = {};
+      jobs.forEach(j => {
+        if (j.technician?.user) {
+          const email = j.technician.user.email;
+          if (!stats[email]) stats[email] = { Technician: email, Completed: 0, TotalOnSiteMinutes: 0 };
+          if (j.status === 'completed') {
+            stats[email].Completed += 1;
+            stats[email].TotalOnSiteMinutes += j.onSiteTimeMinutes || 0;
+          }
+        }
+      });
+      data = Object.values(stats);
+    } else if (type === 'revenue') {
+      const invoices = await prisma.invoice.findMany({ include: { job: { include: { customer: true } } } });
+      data = invoices.map(i => ({
+        InvoiceID: i.id,
+        Status: i.status,
+        Customer: i.job?.customer?.name || 'Unknown',
+        Amount: i.totalAmount
+      }));
+    } else if (type === 'chemicals') {
+      const usage = await prisma.materialUsage.findMany({ include: { inventoryItem: true, job: { include: { customer: true } } } });
+      data = usage.map(u => ({
+        Chemical: u.inventoryItem?.name || 'Unknown',
+        Quantity: u.quantity,
+        Status: u.status,
+        Customer: u.job?.customer?.name || 'Unknown'
+      }));
+    } else {
+      return res.status(400).json({ error: 'Unsupported report type. Use revenue, productivity, or chemicals.' });
+    }
+
+    if (data.length === 0) {
+      data = [{ Message: 'No data available for this report type.' }];
+    }
+
+    if (format === 'csv') {
+      const json2csvParser = new Parser();
+      const csv = json2csvParser.parse(data);
+      res.header('Content-Type', 'text/csv');
+      res.attachment(`${type}-report.csv`);
+      return res.send(csv);
+    } else if (format === 'pdf') {
+      const doc = new PDFDocument();
+      res.header('Content-Type', 'application/pdf');
+      res.attachment(`${type}-report.pdf`);
+      doc.pipe(res);
+
+      doc.fontSize(20).text(`${String(type).toUpperCase()} REPORT`, { align: 'center' });
+      doc.moveDown();
+      
+      data.forEach(item => {
+        doc.fontSize(10).text(JSON.stringify(item, null, 2));
+        doc.moveDown();
+      });
+
+      doc.end();
+    } else {
+      res.status(400).json({ error: 'Unsupported format type. Use csv or pdf' });
+    }
+  } catch (error) {
+    console.error('Error generating report:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
