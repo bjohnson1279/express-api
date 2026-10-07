@@ -1,27 +1,27 @@
-import { Request, Response } from 'express';
+import { FastifyRequest, FastifyReply } from 'fastify';
 import { PrismaClient } from '@prisma/client';
 import { AuthRequest } from '../../shared/middleware/authMiddleware';
 
 const prisma = new PrismaClient();
 
-export const getCampaigns = async (req: AuthRequest, res: Response) => {
+export const getCampaigns = async (req: AuthRequest, reply: FastifyReply) => {
   try {
     const tenantId = req.user?.tenantId;
     const campaigns = await prisma.campaign.findMany({
       where: { tenantId },
       orderBy: { createdAt: 'desc' }
     });
-    res.json(campaigns);
+    reply.send(campaigns);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Internal server error' });
+    reply.status(500).send({ error: 'Internal server error' });
   }
 };
 
-export const createCampaign = async (req: AuthRequest, res: Response) => {
+export const createCampaign = async (req: AuthRequest, reply: FastifyReply) => {
   try {
     const tenantId = req.user?.tenantId!;
-    const { name, startDate, endDate, budget } = req.body;
+    const { name, startDate, endDate, budget } = (req.body as any);
     
     const campaign = await prisma.campaign.create({
       data: {
@@ -33,17 +33,17 @@ export const createCampaign = async (req: AuthRequest, res: Response) => {
         status: 'draft',
       }
     });
-    res.status(201).json(campaign);
+    reply.status(201).send(campaign);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Internal server error' });
+    reply.status(500).send({ error: 'Internal server error' });
   }
 };
 
-export const scheduleFollowup = async (req: AuthRequest, res: Response) => {
+export const scheduleFollowup = async (req: AuthRequest, reply: FastifyReply) => {
   try {
     const tenantId = req.user?.tenantId!;
-    const { customerId, campaignId, sequenceType, scheduledDate } = req.body;
+    const { customerId, campaignId, sequenceType, scheduledDate } = (req.body as any);
     
     const followup = await prisma.automatedFollowup.create({
       data: {
@@ -54,9 +54,9 @@ export const scheduleFollowup = async (req: AuthRequest, res: Response) => {
         scheduledDate: new Date(scheduledDate),
       }
     });
-    res.status(201).json(followup);
+    reply.status(201).send(followup);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Internal server error' });
+    reply.status(500).send({ error: 'Internal server error' });
   }
 };

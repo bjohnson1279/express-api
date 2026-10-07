@@ -1,13 +1,15 @@
-import { Router } from 'express';
+import { FastifyPluginAsync } from 'fastify';
 import { getJobs, getJobsCalendar, updateJob, createJob, clockIn, clockOut } from './jobController';
 
-const router = Router();
+const routes: FastifyPluginAsync = async (fastify, opts) => {
 
-router.get('/calendar', getJobsCalendar);
-router.get('/', getJobs);
-router.post('/', createJob);
-router.patch('/:id', updateJob);
-router.post('/:id/clock-in', clockIn);
-router.post('/:id/clock-out', clockOut);
+fastify.get('/calendar', getJobsCalendar);
+fastify.get('/', getJobs);
+fastify.post('/', createJob);
+fastify.patch('/:id', updateJob);
+fastify.post('/:id/clock-in', clockIn);
+fastify.post('/:id/clock-out', clockOut);
 
-export default router;
+};
+
+export default routes;

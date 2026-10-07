@@ -1,9 +1,9 @@
-import { Request, Response } from 'express';
+import { FastifyRequest, FastifyReply } from 'fastify';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-export const getContracts = async (req: Request, res: Response) => {
+export const getContracts = async (req: FastifyRequest, reply: FastifyReply) => {
   try {
     const contracts = await prisma.serviceContract.findMany({
       include: {
@@ -11,9 +11,9 @@ export const getContracts = async (req: Request, res: Response) => {
         property: true
       }
     });
-    res.json(contracts);
+    reply.send(contracts);
   } catch (error) {
     console.error('Error fetching contracts:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    reply.status(500).send({ error: 'Internal server error' });
   }
 };

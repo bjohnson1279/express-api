@@ -1,18 +1,20 @@
-import { Router } from 'express';
+import { FastifyPluginAsync } from 'fastify';
 import { getFinancialReport, getInvoices, createInvoice, markInvoicePaid, createQuote, getQuotes, acceptQuote, recordPayment, triggerErpSync } from './financeController';
 
-const router = Router();
-router.get('/report', getFinancialReport);
-router.get('/invoices', getInvoices);
-router.post('/invoices', createInvoice);
-router.patch('/invoices/:id/status', markInvoicePaid);
+const routes: FastifyPluginAsync = async (fastify, opts) => {
+fastify.get('/report', getFinancialReport);
+fastify.get('/invoices', getInvoices);
+fastify.post('/invoices', createInvoice);
+fastify.patch('/invoices/:id/status', markInvoicePaid);
 
-router.get('/quotes', getQuotes);
-router.post('/quotes', createQuote);
-router.patch('/quotes/:id/accept', acceptQuote);
+fastify.get('/quotes', getQuotes);
+fastify.post('/quotes', createQuote);
+fastify.patch('/quotes/:id/accept', acceptQuote);
 
-router.post('/payments', recordPayment);
+fastify.post('/payments', recordPayment);
 
-router.post('/integrations/erp/sync', triggerErpSync);
+fastify.post('/integrations/erp/sync', triggerErpSync);
 
-export default router;
+};
+
+export default routes;

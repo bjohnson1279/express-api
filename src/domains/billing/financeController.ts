@@ -1,11 +1,11 @@
-import { Request, Response } from 'express';
+import { FastifyRequest, FastifyReply } from 'fastify';
 import { AuthRequest } from '../../shared/middleware/authMiddleware';
 import { PrismaClient } from '@prisma/client';
 import { syncToErp } from './erpIntegration';
 
 const prisma = new PrismaClient();
 
-export const getFinancialReport = async (req: Request, res: Response) => {
+export const getFinancialReport = async (req: FastifyRequest, reply: FastifyReply) => {
   try {
     const contracts = await prisma.serviceContract.findMany({
       where: { status: 'active' }
@@ -32,7 +32,7 @@ export const getFinancialReport = async (req: Request, res: Response) => {
     });
     const outstandingInvoices = invoices.filter(i => i.status === 'unpaid');
 
-    res.json({
+    reply.send({
       mrr,
       arr: mrr * 12,
       totalCommissions,
@@ -45,11 +45,11 @@ export const getFinancialReport = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Internal server error' });
+    reply.status(500).send({ error: 'Internal server error' });
   }
 };
 
-export const getInvoices = async (req: Request, res: Response) => {
+export const getInvoices = async (req: FastifyRequest, reply: FastifyReply) => {
   try {
     const invoices = await prisma.invoice.findMany({
       include: {
@@ -59,16 +59,16 @@ export const getInvoices = async (req: Request, res: Response) => {
       },
       orderBy: { createdAt: 'desc' }
     });
-    res.json(invoices);
+    reply.send(invoices);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Internal server error' });
+    reply.status(500).send({ error: 'Internal server error' });
   }
 };
 
-export const createInvoice = async (req: Request, res: Response) => {
+export const createInvoice = async (req: FastifyRequest, reply: FastifyReply) => {
   try {
-    const { jobId, totalAmount } = req.body;
+    const { jobId, totalAmount } = (req.body as any);
     const invoice = await prisma.invoice.create({
       data: {
         jobId,
@@ -81,16 +81,16 @@ export const createInvoice = async (req: Request, res: Response) => {
       where: { id: jobId },
       data: { status: 'invoiced' }
     });
-    res.status(201).json(invoice);
+    reply.status(201).send(invoice);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Internal server error' });
+    reply.status(500).send({ error: 'Internal server error' });
   }
 };
 
-export const markInvoicePaid = async (req: Request, res: Response) => {
+export const markInvoicePaid = async (req: FastifyRequest, reply: FastifyReply) => {
   try {
-    const { id } = req.params;
+    const { id } = (req.params as any);
     const invoice = await prisma.invoice.update({
       where: { id },
       data: { status: 'paid' },
@@ -100,16 +100,16 @@ export const markInvoicePaid = async (req: Request, res: Response) => {
         }
       }
     });
-    res.json(invoice);
+    reply.send(invoice);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Internal server error' });
+    reply.status(500).send({ error: 'Internal server error' });
   }
 };
 
-export const createQuote = async (req: Request, res: Response) => {
+export const createQuote = async (req: FastifyRequest, reply: FastifyReply) => {
   try {
-    const { customerId, propertyId, totalAmount } = req.body;
+    const { customerId, propertyId, totalAmount } = (req.body as any);
     const quote = await prisma.quote.create({
       data: {
         customerId,
@@ -118,31 +118,31 @@ export const createQuote = async (req: Request, res: Response) => {
         status: 'draft'
       }
     });
-    res.status(201).json(quote);
+    reply.status(201).send(quote);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Internal server error' });
+    reply.status(500).send({ error: 'Internal server error' });
   }
 };
 
-export const getQuotes = async (req: Request, res: Response) => {
+export const getQuotes = async (req: FastifyRequest, reply: FastifyReply) => {
   try {
     const quotes = await prisma.quote.findMany({
       include: { customer: true, property: true },
       orderBy: { createdAt: 'desc' }
     });
-    res.json(quotes);
+    reply.send(quotes);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Internal server error' });
+    reply.status(500).send({ error: 'Internal server error' });
   }
 };
 
 import { eventBus } from '../comms/eventBus';
 
-export const acceptQuote = async (req: AuthRequest, res: Response) => {
+export const acceptQuote = async (req: AuthRequest, reply: FastifyReply) => {
   try {
-    const { id } = req.params;
+    const { id } = (req.params as any);
     const tenantId = req.user?.tenantId!;
     const quote = await prisma.quote.update({
       where: { id },
@@ -163,16 +163,16 @@ export const acceptQuote = async (req: AuthRequest, res: Response) => {
     // Publish event
     eventBus.broadcast('quote_accepted', { quote, job: newJob });
 
-    res.json({ quote, job: newJob });
+    reply.send({ quote, job: newJob });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Internal server error' });
+    reply.status(500).send({ error: 'Internal server error' });
   }
 };
 
-export const recordPayment = async (req: Request, res: Response) => {
+export const recordPayment = async (req: FastifyRequest, reply: FastifyReply) => {
   try {
-    const { invoiceId, customerId, amount, method } = req.body;
+    const { invoiceId, customerId, amount, method } = (req.body as any);
     const payment = await prisma.payment.create({
       data: {
         invoiceId,
@@ -189,20 +189,20 @@ export const recordPayment = async (req: Request, res: Response) => {
         data: { status: 'paid' }
       });
     }
-    res.status(201).json(payment);
+    reply.status(201).send(payment);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Internal server error' });
+    reply.status(500).send({ error: 'Internal server error' });
   }
 };
 
-export const triggerErpSync = async (req: Request, res: Response) => {
+export const triggerErpSync = async (req: FastifyRequest, reply: FastifyReply) => {
   try {
-    const { provider, resourceId, resourceType, payload } = req.body;
+    const { provider, resourceId, resourceType, payload } = (req.body as any);
     const log = await syncToErp(provider, resourceId, resourceType, payload);
-    res.status(201).json(log);
+    reply.status(201).send(log);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Internal server error' });
+    reply.status(500).send({ error: 'Internal server error' });
   }
 };

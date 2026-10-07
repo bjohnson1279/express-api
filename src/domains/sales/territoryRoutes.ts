@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { FastifyPluginAsync } from 'fastify';
 import {
   getTerritories,
   getTerritoryById,
@@ -11,19 +11,21 @@ import {
   deleteDoNotKnock
 } from './territoryController';
 
-const router = Router();
+const routes: FastifyPluginAsync = async (fastify, opts) => {
 
 // Territory routes
-router.get('/', getTerritories);
-router.get('/:id', getTerritoryById);
-router.post('/', createTerritory);
-router.put('/:id', updateTerritory);
-router.delete('/:id', deleteTerritory);
-router.get('/:id/analytics', getTerritoryAnalytics);
+fastify.get('/', getTerritories);
+fastify.get('/:id', getTerritoryById);
+fastify.post('/', createTerritory);
+fastify.put('/:id', updateTerritory);
+fastify.delete('/:id', deleteTerritory);
+fastify.get('/:id/analytics', getTerritoryAnalytics);
 
 // Do-Not-Knock compliance routes
-router.get('/compliance/do-not-knock', getDoNotKnockList);
-router.post('/compliance/do-not-knock', createDoNotKnock);
-router.delete('/compliance/do-not-knock/:id', deleteDoNotKnock);
+fastify.get('/compliance/do-not-knock', getDoNotKnockList);
+fastify.post('/compliance/do-not-knock', createDoNotKnock);
+fastify.delete('/compliance/do-not-knock/:id', deleteDoNotKnock);
 
-export default router;
+};
+
+export default routes;

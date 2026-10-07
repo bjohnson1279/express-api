@@ -1,6 +1,8 @@
-import { Router } from 'express';
+import { FastifyPluginAsync } from 'fastify';
 import { getCanvassPins } from './canvassController';
 
-const router = Router();
-router.get('/pins', getCanvassPins);
-export default router;
+const routes: FastifyPluginAsync = async (fastify, opts) => {
+fastify.get('/pins', getCanvassPins);
+};
+
+export default routes;

@@ -1,12 +1,14 @@
-import { Router } from 'express';
+import { FastifyPluginAsync } from 'fastify';
 import { createSurvey, submitResponse, getSurvey, listSurveys, npsDashboard } from './surveyController';
 
-const router = Router();
+const routes: FastifyPluginAsync = async (fastify, opts) => {
 
-router.get('/nps-dashboard', npsDashboard);
-router.get('/', listSurveys);
-router.get('/:id', getSurvey);
-router.post('/', createSurvey);
-router.post('/:id/respond', submitResponse);
+fastify.get('/nps-dashboard', npsDashboard);
+fastify.get('/', listSurveys);
+fastify.get('/:id', getSurvey);
+fastify.post('/', createSurvey);
+fastify.post('/:id/respond', submitResponse);
 
-export default router;
+};
+
+export default routes;

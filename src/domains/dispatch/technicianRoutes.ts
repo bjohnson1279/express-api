@@ -1,9 +1,11 @@
-import { Router } from 'express';
+import { FastifyPluginAsync } from 'fastify';
 import { getTechnicians, getTechnicianSchedule, updateLocation } from './technicianController';
 
-const router = Router();
-router.get('/', getTechnicians);
-router.get('/:id/schedule', getTechnicianSchedule);
-router.patch('/:id/location', updateLocation);
+const routes: FastifyPluginAsync = async (fastify, opts) => {
+fastify.get('/', getTechnicians);
+fastify.get('/:id/schedule', getTechnicianSchedule);
+fastify.patch('/:id/location', updateLocation);
 
-export default router;
+};
+
+export default routes;

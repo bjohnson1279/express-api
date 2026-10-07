@@ -1,24 +1,24 @@
-import { Request, Response } from 'express';
+import { FastifyRequest, FastifyReply } from 'fastify';
 import { PrismaClient } from '@prisma/client';
 import { eventBus } from '../comms/eventBus';
 
 const prisma = new PrismaClient();
 
-export const getTechnicians = async (req: Request, res: Response) => {
+export const getTechnicians = async (req: FastifyRequest, reply: FastifyReply) => {
   try {
     const techs = await prisma.technician.findMany({
       include: { user: true }
     });
-    res.json(techs);
+    reply.send(techs);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Internal server error' });
+    reply.status(500).send({ error: 'Internal server error' });
   }
 };
 
-export const getTechnicianSchedule = async (req: Request, res: Response) => {
+export const getTechnicianSchedule = async (req: FastifyRequest, reply: FastifyReply) => {
   try {
-    const { id } = req.params;
+    const { id } = (req.params as any);
     // For MVP, we'll fetch jobs assigned to the tech that are scheduled.
     // We could filter by today's date if needed, but we'll fetch all assigned non-completed jobs.
     const jobs = await prisma.job.findMany({
@@ -32,17 +32,17 @@ export const getTechnicianSchedule = async (req: Request, res: Response) => {
       },
       orderBy: { scheduledStart: 'asc' }
     });
-    res.json(jobs);
+    reply.send(jobs);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Internal server error' });
+    reply.status(500).send({ error: 'Internal server error' });
   }
 };
 
-export const updateLocation = async (req: Request, res: Response) => {
+export const updateLocation = async (req: FastifyRequest, reply: FastifyReply) => {
   try {
-    const { id } = req.params;
-    const { lat, lng } = req.body;
+    const { id } = (req.params as any);
+    const { lat, lng } = (req.body as any);
     
     const updated = await prisma.technician.update({
       where: { id },
@@ -52,9 +52,9 @@ export const updateLocation = async (req: Request, res: Response) => {
       }
     });
     eventBus.broadcast('tech_updated', updated);
-    res.json(updated);
+    reply.send(updated);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Internal server error' });
+    reply.status(500).send({ error: 'Internal server error' });
   }
 };

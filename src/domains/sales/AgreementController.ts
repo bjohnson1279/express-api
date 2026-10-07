@@ -1,44 +1,44 @@
-import { Request, Response } from 'express';
+import { FastifyRequest, FastifyReply } from 'fastify';
 import { AgreementService } from './AgreementService';
 import path from 'path';
 import fs from 'fs';
 
 const agreementService = new AgreementService();
 
-export const generateAgreement = async (req: Request, res: Response) => {
+export const generateAgreement = async (req: FastifyRequest, reply: FastifyReply) => {
   try {
-    const { tenantId, customerId, propertyId, cadence, recurringAmount, startDate } = req.body;
+    const { tenantId, customerId, propertyId, cadence, recurringAmount, startDate } = (req.body as any);
     const agreement = await agreementService.generateAgreement(
       tenantId, customerId, propertyId, cadence, recurringAmount, new Date(startDate)
     );
-    res.status(201).json(agreement);
+    reply.status(201).send(agreement);
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    reply.status(500).send({ error: error.message });
   }
 };
 
-export const signAgreement = async (req: Request, res: Response) => {
+export const signAgreement = async (req: FastifyRequest, reply: FastifyReply) => {
   try {
-    const { id } = req.params;
-    const { signatureSvg } = req.body;
+    const { id } = (req.params as any);
+    const { signatureSvg } = (req.body as any);
     const agreement = await agreementService.signAgreement(id, signatureSvg);
-    res.json(agreement);
+    reply.send(agreement);
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    reply.status(500).send({ error: error.message });
   }
 };
 
-export const downloadAgreement = async (req: Request, res: Response) => {
+export const downloadAgreement = async (req: FastifyRequest, reply: FastifyReply) => {
   try {
-    const { id } = req.params;
+    const { id } = (req.params as any);
     const pdfPath = path.join(__dirname, `../../uploads/agreements/${id}.pdf`);
     
     if (fs.existsSync(pdfPath)) {
-      res.download(pdfPath);
+      reply.download(pdfPath);
     } else {
-      res.status(404).json({ error: 'Agreement PDF not found' });
+      reply.status(404).send({ error: 'Agreement PDF not found' });
     }
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    reply.status(500).send({ error: error.message });
   }
 };

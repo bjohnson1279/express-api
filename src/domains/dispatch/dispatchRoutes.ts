@@ -1,10 +1,12 @@
-import { Router } from 'express';
+import { FastifyPluginAsync } from 'fastify';
 import { optimizeRoute, emergencyDispatch, autoSchedule, commitSchedule } from './dispatchController';
 
-const router = Router();
-router.post('/optimize', optimizeRoute);
-router.post('/emergency', emergencyDispatch);
-router.post('/auto-schedule', autoSchedule);
-router.post('/commit-schedule', commitSchedule);
+const routes: FastifyPluginAsync = async (fastify, opts) => {
+fastify.post('/optimize', optimizeRoute);
+fastify.post('/emergency', emergencyDispatch);
+fastify.post('/auto-schedule', autoSchedule);
+fastify.post('/commit-schedule', commitSchedule);
 
-export default router;
+};
+
+export default routes;

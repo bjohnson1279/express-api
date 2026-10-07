@@ -1,8 +1,10 @@
-import { Router } from 'express';
+import { FastifyPluginAsync } from 'fastify';
 import { getContracts } from './contractController';
 
-const router = Router();
+const routes: FastifyPluginAsync = async (fastify, opts) => {
 
-router.get('/', getContracts);
+fastify.get('/', getContracts);
 
-export default router;
+};
+
+export default routes;

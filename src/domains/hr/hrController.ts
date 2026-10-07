@@ -1,9 +1,9 @@
-import { Request, Response } from 'express';
+import { FastifyRequest, FastifyReply } from 'fastify';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-export const getStaff = async (req: Request, res: Response) => {
+export const getStaff = async (req: FastifyRequest, reply: FastifyReply) => {
   try {
     const staff = await prisma.user.findMany({
       where: {
@@ -17,26 +17,26 @@ export const getStaff = async (req: Request, res: Response) => {
       },
       orderBy: { email: 'asc' }
     });
-    res.json(staff);
+    reply.send(staff);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Internal server error' });
+    reply.status(500).send({ error: 'Internal server error' });
   }
 };
 
-export const getCourses = async (req: Request, res: Response) => {
+export const getCourses = async (req: FastifyRequest, reply: FastifyReply) => {
   try {
     const courses = await prisma.trainingCourse.findMany();
-    res.json(courses);
+    reply.send(courses);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Internal server error' });
+    reply.status(500).send({ error: 'Internal server error' });
   }
 };
 
-export const assignCertification = async (req: Request, res: Response) => {
+export const assignCertification = async (req: FastifyRequest, reply: FastifyReply) => {
   try {
-    const { userId, courseId, expiresAt } = req.body;
+    const { userId, courseId, expiresAt } = (req.body as any);
     const cert = await prisma.employeeCertification.create({
       data: {
         userId,
@@ -47,9 +47,9 @@ export const assignCertification = async (req: Request, res: Response) => {
       },
       include: { course: true }
     });
-    res.status(201).json(cert);
+    reply.status(201).send(cert);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Internal server error' });
+    reply.status(500).send({ error: 'Internal server error' });
   }
 };

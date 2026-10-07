@@ -1,18 +1,18 @@
-import { Request, Response } from 'express';
+import { FastifyRequest, FastifyReply } from 'fastify';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-export const getCanvassPins = async (req: Request, res: Response) => {
+export const getCanvassPins = async (req: FastifyRequest, reply: FastifyReply) => {
   try {
     const pins = await prisma.canvassPin.findMany({
       include: {
         salesRep: true
       }
     });
-    res.json(pins);
+    reply.send(pins);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Internal server error' });
+    reply.status(500).send({ error: 'Internal server error' });
   }
 };

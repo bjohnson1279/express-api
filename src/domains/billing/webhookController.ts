@@ -1,19 +1,19 @@
-import { Request, Response } from 'express';
+import { FastifyRequest, FastifyReply } from 'fastify';
 import { stripeService } from './stripeService';
 
-export const stripeWebhook = (req: Request, res: Response) => {
+export const stripeWebhook = (req: FastifyRequest, reply: FastifyReply) => {
   const sig = req.headers['stripe-signature'];
 
   if (!sig) {
-    return res.status(400).send('Webhook Error: Missing signature');
+    return reply.status(400).send('Webhook Error: Missing signature');
   }
 
   let event;
 
   try {
-    event = stripeService.constructEvent(req.body, sig as string);
+    event = stripeService.constructEvent((req.body as any), sig as string);
   } catch (err: any) {
-    return res.status(400).send(`Webhook Error: ${err.message}`);
+    return reply.status(400).send(`Webhook Error: ${err.message}`);
   }
 
   if (event.type === 'payment_intent.succeeded') {
@@ -24,5 +24,5 @@ export const stripeWebhook = (req: Request, res: Response) => {
     // Handle failed payment
   }
 
-  res.json({ received: true });
+  reply.send({ received: true });
 };

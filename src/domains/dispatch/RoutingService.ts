@@ -1,7 +1,7 @@
 // Basic Routing Service using OSRM (Open Source Routing Machine) public API for TSP
 
 export class RoutingService {
-  private osrmBaseUrl = process.env.OSRM_BASE_URL || 'http://router.project-osrm.org';
+  private osrmBaseUrl = process.env.OSRM_BASE_URL || 'http://fastify.project-osrm.org';
 
   /**
    * Calculates the optimal route for a set of coordinates using OSRM TSP solver.
@@ -21,7 +21,7 @@ export class RoutingService {
         throw new Error(`OSRM API error: ${response.statusText}`);
       }
 
-      const data = await response.json();
+      const data = await response.send();
       
       if (data.code !== 'Ok') {
         throw new Error(`OSRM routing failed: ${data.code}`);

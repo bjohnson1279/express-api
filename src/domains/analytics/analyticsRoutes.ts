@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { FastifyPluginAsync } from 'fastify';
 import { 
   getDashboardAnalytics, 
   getPropertyPestRisk, 
@@ -9,16 +9,18 @@ import {
   exportReport
 } from './analyticsController';
 
-const router = Router();
+const routes: FastifyPluginAsync = async (fastify, opts) => {
 
-router.get('/dashboard', getDashboardAnalytics);
-router.get('/labor-costs', getLaborCosts);
-router.get('/reports/export', exportReport);
+fastify.get('/dashboard', getDashboardAnalytics);
+fastify.get('/labor-costs', getLaborCosts);
+fastify.get('/reports/export', exportReport);
 
 // AI Pest Risk Scoring & Heatmap
-router.get('/pest-risk/climate', getClimateMetrics);
-router.get('/pest-risk/heatmap', getPestRiskHeatmap);
-router.get('/pest-risk/:propertyId', getPropertyPestRisk);
-router.post('/pest-risk/recalculate', recalculatePestRisks);
+fastify.get('/pest-risk/climate', getClimateMetrics);
+fastify.get('/pest-risk/heatmap', getPestRiskHeatmap);
+fastify.get('/pest-risk/:propertyId', getPropertyPestRisk);
+fastify.post('/pest-risk/recalculate', recalculatePestRisks);
 
-export default router;
+};
+
+export default routes;

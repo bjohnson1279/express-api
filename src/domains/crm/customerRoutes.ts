@@ -1,9 +1,11 @@
-import { Router } from 'express';
+import { FastifyPluginAsync } from 'fastify';
 import { getCustomers, getCustomer, getPreferences, updatePreferences } from './customerController';
 
-const router = Router();
-router.get('/', getCustomers);
-router.get('/:id', getCustomer);
-router.get('/:id/preferences', getPreferences);
-router.put('/:id/preferences', updatePreferences);
-export default router;
+const routes: FastifyPluginAsync = async (fastify, opts) => {
+fastify.get('/', getCustomers);
+fastify.get('/:id', getCustomer);
+fastify.get('/:id/preferences', getPreferences);
+fastify.put('/:id/preferences', updatePreferences);
+};
+
+export default routes;

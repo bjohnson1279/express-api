@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { FastifyRequest, FastifyReply } from 'fastify';
 import { PrismaClient } from '@prisma/client';
 import { eventBus } from './eventBus';
 
@@ -8,9 +8,9 @@ export class ChatController {
   /**
    * List chat conversations with customer and assigned CSR details
    */
-  static async getConversations(req: Request, res: Response) {
+  static async getConversations(req: FastifyRequest, reply: FastifyReply) {
     try {
-      const { status, customerId, assignedCsrId } = req.query;
+      const { status, customerId, assignedCsrId } = (req.query as any);
       const tenantId = (req as any).tenantId || req.headers['x-tenant-id'] || '3fa85f64-5717-4562-b3fc-2c963f66afa6';
 
       const where: any = { tenantId: String(tenantId) };
@@ -69,19 +69,19 @@ export class ChatController {
         })
       );
 
-      return res.json(enriched);
+      return reply.send(enriched);
     } catch (error: any) {
       console.error('Error fetching chat conversations:', error);
-      return res.status(500).json({ error: error.message || 'Internal server error' });
+      return reply.status(500).send({ error: error.message || 'Internal server error' });
     }
   }
 
   /**
    * Get single conversation with full message history
    */
-  static async getConversation(req: Request, res: Response) {
+  static async getConversation(req: FastifyRequest, reply: FastifyReply) {
     try {
-      const { id } = req.params;
+      const { id } = (req.params as any);
       const tenantId = (req as any).tenantId || req.headers['x-tenant-id'] || '3fa85f64-5717-4562-b3fc-2c963f66afa6';
 
       const conversation = await prisma.chatConversation.findFirst({
@@ -110,7 +110,7 @@ export class ChatController {
       });
 
       if (!conversation) {
-        return res.status(404).json({ error: 'Chat conversation not found' });
+        return reply.status(404).send({ error: 'Chat conversation not found' });
       }
 
       // Mark incoming customer messages as read when CSR loads conversation
@@ -123,23 +123,23 @@ export class ChatController {
         data: { isRead: true }
       });
 
-      return res.json(conversation);
+      return reply.send(conversation);
     } catch (error: any) {
       console.error('Error fetching conversation:', error);
-      return res.status(500).json({ error: error.message || 'Internal server error' });
+      return reply.status(500).send({ error: error.message || 'Internal server error' });
     }
   }
 
   /**
    * Start a new chat conversation
    */
-  static async createConversation(req: Request, res: Response) {
+  static async createConversation(req: FastifyRequest, reply: FastifyReply) {
     try {
-      const { customerId, subject, initialMessage, senderType = 'CUSTOMER', senderName } = req.body;
+      const { customerId, subject, initialMessage, senderType = 'CUSTOMER', senderName } = (req.body as any);
       const tenantId = (req as any).tenantId || req.headers['x-tenant-id'] || '3fa85f64-5717-4562-b3fc-2c963f66afa6';
 
       if (!customerId) {
-        return res.status(400).json({ error: 'customerId is required' });
+        return reply.status(400).send({ error: 'customerId is required' });
       }
 
       const conversation = await prisma.chatConversation.create({
@@ -186,27 +186,27 @@ export class ChatController {
 
       eventBus.broadcast('conversation_created', { conversation });
 
-      return res.status(201).json({
+      return reply.status(201).send({
         ...conversation,
         initialMessage: createdMessage
       });
     } catch (error: any) {
       console.error('Error creating chat conversation:', error);
-      return res.status(500).json({ error: error.message || 'Internal server error' });
+      return reply.status(500).send({ error: error.message || 'Internal server error' });
     }
   }
 
   /**
    * Send a message in a conversation (Customer or CSR)
    */
-  static async sendMessage(req: Request, res: Response) {
+  static async sendMessage(req: FastifyRequest, reply: FastifyReply) {
     try {
-      const { id } = req.params;
-      const { senderType = 'CSR', senderId, senderName, messageText } = req.body;
+      const { id } = (req.params as any);
+      const { senderType = 'CSR', senderId, senderName, messageText } = (req.body as any);
       const tenantId = (req as any).tenantId || req.headers['x-tenant-id'] || '3fa85f64-5717-4562-b3fc-2c963f66afa6';
 
       if (!messageText || !messageText.trim()) {
-        return res.status(400).json({ error: 'messageText cannot be empty' });
+        return reply.status(400).send({ error: 'messageText cannot be empty' });
       }
 
       const conversation = await prisma.chatConversation.findFirst({
@@ -215,7 +215,7 @@ export class ChatController {
       });
 
       if (!conversation) {
-        return res.status(404).json({ error: 'Conversation not found' });
+        return reply.status(404).send({ error: 'Conversation not found' });
       }
 
       // 1. Create message
@@ -259,20 +259,20 @@ export class ChatController {
         message
       });
 
-      return res.status(201).json(message);
+      return reply.status(201).send(message);
     } catch (error: any) {
       console.error('Error sending message:', error);
-      return res.status(500).json({ error: error.message || 'Internal server error' });
+      return reply.status(500).send({ error: error.message || 'Internal server error' });
     }
   }
 
   /**
    * Update conversation status or CSR assignment
    */
-  static async updateConversation(req: Request, res: Response) {
+  static async updateConversation(req: FastifyRequest, reply: FastifyReply) {
     try {
-      const { id } = req.params;
-      const { status, assignedCsrId, subject } = req.body;
+      const { id } = (req.params as any);
+      const { status, assignedCsrId, subject } = (req.body as any);
       const tenantId = (req as any).tenantId || req.headers['x-tenant-id'] || '3fa85f64-5717-4562-b3fc-2c963f66afa6';
 
       const updateData: any = { updatedAt: new Date() };
@@ -291,40 +291,40 @@ export class ChatController {
 
       eventBus.broadcast('conversation_updated', { conversation: updated });
 
-      return res.json(updated);
+      return reply.send(updated);
     } catch (error: any) {
       console.error('Error updating conversation:', error);
-      return res.status(500).json({ error: error.message || 'Internal server error' });
+      return reply.status(500).send({ error: error.message || 'Internal server error' });
     }
   }
 
   /**
    * List canned responses for CSR quick-reply
    */
-  static async getCannedResponses(req: Request, res: Response) {
+  static async getCannedResponses(req: FastifyRequest, reply: FastifyReply) {
     try {
       const tenantId = (req as any).tenantId || req.headers['x-tenant-id'] || '3fa85f64-5717-4562-b3fc-2c963f66afa6';
       const responses = await prisma.cannedResponse.findMany({
         where: { tenantId: String(tenantId) },
         orderBy: { shortcut: 'asc' }
       });
-      return res.json(responses);
+      return reply.send(responses);
     } catch (error: any) {
       console.error('Error fetching canned responses:', error);
-      return res.status(500).json({ error: error.message || 'Internal server error' });
+      return reply.status(500).send({ error: error.message || 'Internal server error' });
     }
   }
 
   /**
    * Create a new canned response
    */
-  static async createCannedResponse(req: Request, res: Response) {
+  static async createCannedResponse(req: FastifyRequest, reply: FastifyReply) {
     try {
-      const { shortcut, title, category = 'GENERAL', content } = req.body;
+      const { shortcut, title, category = 'GENERAL', content } = (req.body as any);
       const tenantId = (req as any).tenantId || req.headers['x-tenant-id'] || '3fa85f64-5717-4562-b3fc-2c963f66afa6';
 
       if (!shortcut || !title || !content) {
-        return res.status(400).json({ error: 'shortcut, title, and content are required' });
+        return reply.status(400).send({ error: 'shortcut, title, and content are required' });
       }
 
       const canned = await prisma.cannedResponse.create({
@@ -337,10 +337,10 @@ export class ChatController {
         }
       });
 
-      return res.status(201).json(canned);
+      return reply.status(201).send(canned);
     } catch (error: any) {
       console.error('Error creating canned response:', error);
-      return res.status(500).json({ error: error.message || 'Internal server error' });
+      return reply.status(500).send({ error: error.message || 'Internal server error' });
     }
   }
 }

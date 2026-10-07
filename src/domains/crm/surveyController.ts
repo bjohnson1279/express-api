@@ -1,12 +1,12 @@
-import { Request, Response } from 'express';
+import { FastifyRequest, FastifyReply } from 'fastify';
 import { PrismaClient } from '@prisma/client';
 
 const prisma: any = new PrismaClient();
 
 // POST /api/v1/surveys — Create and send a survey after service
-export const createSurvey = async (req: Request, res: Response) => {
+export const createSurvey = async (req: FastifyRequest, reply: FastifyReply) => {
   try {
-    const { tenantId, customerId, jobId, technicianId } = req.body;
+    const { tenantId, customerId, jobId, technicianId } = (req.body as any);
 
     const survey = await prisma.survey.create({
       data: {
@@ -59,30 +59,30 @@ export const createSurvey = async (req: Request, res: Response) => {
       }
     }
 
-    res.status(201).json(survey);
+    reply.status(201).send(survey);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Internal server error' });
+    reply.status(500).send({ error: 'Internal server error' });
   }
 };
 
 // POST /api/v1/surveys/:id/respond — Submit a survey response (customer-facing)
-export const submitResponse = async (req: Request, res: Response) => {
+export const submitResponse = async (req: FastifyRequest, reply: FastifyReply) => {
   try {
-    const { id } = req.params;
-    const { npsScore, comments } = req.body;
+    const { id } = (req.params as any);
+    const { npsScore, comments } = (req.body as any);
 
     // Validate NPS score
     if (npsScore === undefined || npsScore === null || npsScore < 0 || npsScore > 10) {
-      return res.status(400).json({ error: 'NPS score must be between 0 and 10' });
+      return reply.status(400).send({ error: 'NPS score must be between 0 and 10' });
     }
 
     // Check survey exists and isn't already responded
     const survey = await prisma.survey.findUnique({ where: { id }, include: { response: true } });
-    if (!survey) return res.status(404).json({ error: 'Survey not found' });
-    if (survey.response) return res.status(409).json({ error: 'Survey already responded' });
+    if (!survey) return reply.status(404).send({ error: 'Survey not found' });
+    if (survey.response) return reply.status(409).send({ error: 'Survey already responded' });
     if (survey.expiresAt && new Date() > survey.expiresAt) {
-      return res.status(410).json({ error: 'Survey has expired' });
+      return reply.status(410).send({ error: 'Survey has expired' });
     }
 
     const response = await prisma.surveyResponse.create({
@@ -99,17 +99,17 @@ export const submitResponse = async (req: Request, res: Response) => {
       data: { status: 'completed' }
     });
 
-    res.status(201).json(response);
+    reply.status(201).send(response);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Internal server error' });
+    reply.status(500).send({ error: 'Internal server error' });
   }
 };
 
 // GET /api/v1/surveys/:id — Get a single survey (for the customer response form)
-export const getSurvey = async (req: Request, res: Response) => {
+export const getSurvey = async (req: FastifyRequest, reply: FastifyReply) => {
   try {
-    const { id } = req.params;
+    const { id } = (req.params as any);
     const survey = await prisma.survey.findUnique({
       where: { id },
       include: {
@@ -119,16 +119,16 @@ export const getSurvey = async (req: Request, res: Response) => {
         job: { select: { scheduledStart: true, status: true } }
       }
     });
-    if (!survey) return res.status(404).json({ error: 'Survey not found' });
-    res.json(survey);
+    if (!survey) return reply.status(404).send({ error: 'Survey not found' });
+    reply.send(survey);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Internal server error' });
+    reply.status(500).send({ error: 'Internal server error' });
   }
 };
 
 // GET /api/v1/surveys — List all surveys (admin)
-export const listSurveys = async (req: Request, res: Response) => {
+export const listSurveys = async (req: FastifyRequest, reply: FastifyReply) => {
   try {
     const surveys = await prisma.survey.findMany({
       include: {
@@ -139,15 +139,15 @@ export const listSurveys = async (req: Request, res: Response) => {
       orderBy: { sentAt: 'desc' },
       take: 100
     });
-    res.json(surveys);
+    reply.send(surveys);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Internal server error' });
+    reply.status(500).send({ error: 'Internal server error' });
   }
 };
 
 // GET /api/v1/surveys/nps-dashboard — Aggregate NPS metrics
-export const npsDashboard = async (req: Request, res: Response) => {
+export const npsDashboard = async (req: FastifyRequest, reply: FastifyReply) => {
   try {
     const responses = await prisma.surveyResponse.findMany({
       include: {
@@ -201,7 +201,7 @@ export const npsDashboard = async (req: Request, res: Response) => {
         respondedAt: r.respondedAt
       }));
 
-    res.json({
+    reply.send({
       npsScore,
       avgScore: Number(avgScore),
       total,
@@ -213,6 +213,6 @@ export const npsDashboard = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Internal server error' });
+    reply.status(500).send({ error: 'Internal server error' });
   }
 };

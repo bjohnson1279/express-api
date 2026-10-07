@@ -1,10 +1,10 @@
-import { Request, Response } from 'express';
+import { FastifyRequest, FastifyReply } from 'fastify';
 import { PrismaClient } from '@prisma/client';
 import { eventBus } from '../comms/eventBus';
 
 const prisma = new PrismaClient();
 
-export const getJobs = async (req: Request, res: Response) => {
+export const getJobs = async (req: FastifyRequest, reply: FastifyReply) => {
   try {
     const jobs = await prisma.job.findMany({
       include: {
@@ -15,16 +15,16 @@ export const getJobs = async (req: Request, res: Response) => {
         }
       }
     });
-    res.json(jobs);
+    reply.send(jobs);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Internal server error' });
+    reply.status(500).send({ error: 'Internal server error' });
   }
 };
 
-export const getJobsCalendar = async (req: Request, res: Response) => {
+export const getJobsCalendar = async (req: FastifyRequest, reply: FastifyReply) => {
   try {
-    const customerId = req.query.customerId as string;
+    const customerId = (req.query as any).customerId as string;
     
     const whereClause: any = {
       scheduledStart: { not: null }
@@ -57,16 +57,16 @@ export const getJobsCalendar = async (req: Request, res: Response) => {
       };
     });
 
-    res.json(calendarEvents);
+    reply.send(calendarEvents);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Internal server error' });
+    reply.status(500).send({ error: 'Internal server error' });
   }
 };
 
-export const createJob = async (req: Request, res: Response) => {
+export const createJob = async (req: FastifyRequest, reply: FastifyReply) => {
   try {
-    const { tenantId, customerId, propertyId, status, scheduledStart, contractId } = req.body;
+    const { tenantId, customerId, propertyId, status, scheduledStart, contractId } = (req.body as any);
     const newJob = await prisma.job.create({
       data: {
         tenantId,
@@ -77,17 +77,17 @@ export const createJob = async (req: Request, res: Response) => {
         contractId: contractId || null
       }
     });
-    res.status(201).json(newJob);
+    reply.status(201).send(newJob);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Internal server error' });
+    reply.status(500).send({ error: 'Internal server error' });
   }
 };
 
-export const updateJob = async (req: Request, res: Response) => {
+export const updateJob = async (req: FastifyRequest, reply: FastifyReply) => {
   try {
-    const { id } = req.params;
-    const { technicianId, status } = req.body;
+    const { id } = (req.params as any);
+    const { technicianId, status } = (req.body as any);
     
     // Explicitly handle null for unassigning
     const data: any = {};
@@ -103,17 +103,17 @@ export const updateJob = async (req: Request, res: Response) => {
       eventBus.broadcast('job_assigned', updated);
     }
 
-    res.json(updated);
+    reply.send(updated);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Internal server error' });
+    reply.status(500).send({ error: 'Internal server error' });
   }
 };
 
-export const clockIn = async (req: Request, res: Response) => {
+export const clockIn = async (req: FastifyRequest, reply: FastifyReply) => {
   try {
-    const { id } = req.params;
-    const { lat, lng } = req.body;
+    const { id } = (req.params as any);
+    const { lat, lng } = (req.body as any);
     
     const updated = await prisma.job.update({
       where: { id },
@@ -130,19 +130,19 @@ export const clockIn = async (req: Request, res: Response) => {
        });
     }
 
-    res.json(updated);
+    reply.send(updated);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Internal server error' });
+    reply.status(500).send({ error: 'Internal server error' });
   }
 };
 
-export const clockOut = async (req: Request, res: Response) => {
+export const clockOut = async (req: FastifyRequest, reply: FastifyReply) => {
   try {
-    const { id } = req.params;
+    const { id } = (req.params as any);
     
     const job = await prisma.job.findUnique({ where: { id } });
-    if (!job) return res.status(404).json({ error: 'Job not found' });
+    if (!job) return reply.status(404).send({ error: 'Job not found' });
     
     const actualDeparture = new Date();
     let onSiteTimeMinutes = 0;
@@ -161,9 +161,9 @@ export const clockOut = async (req: Request, res: Response) => {
       }
     });
 
-    res.json(updated);
+    reply.send(updated);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Internal server error' });
+    reply.status(500).send({ error: 'Internal server error' });
   }
 };

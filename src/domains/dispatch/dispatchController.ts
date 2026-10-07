@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { FastifyRequest, FastifyReply } from 'fastify';
 import { PrismaClient, TechStatus } from '@prisma/client';
 import { eventBus } from '../comms/eventBus';
 
@@ -27,9 +27,9 @@ function geocodeProperty(property: any) {
   };
 }
 
-export const optimizeRoute = async (req: Request, res: Response) => {
+export const optimizeRoute = async (req: FastifyRequest, reply: FastifyReply) => {
   try {
-    const { jobIds, startLat, startLng } = req.body;
+    const { jobIds, startLat, startLng } = (req.body as any);
     
     const jobs = await prisma.job.findMany({
       where: { id: { in: jobIds } },
@@ -37,7 +37,7 @@ export const optimizeRoute = async (req: Request, res: Response) => {
     });
 
     if (!startLat || !startLng) {
-      return res.json(jobs);
+      return reply.send(jobs);
     }
 
     let currentLocation = { lat: startLat, lng: startLng };
@@ -66,23 +66,23 @@ export const optimizeRoute = async (req: Request, res: Response) => {
       unvisited.splice(nearestIdx, 1);
     }
 
-    res.json(route);
+    reply.send(route);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Internal server error' });
+    reply.status(500).send({ error: 'Internal server error' });
   }
 };
 
-export const emergencyDispatch = async (req: Request, res: Response) => {
+export const emergencyDispatch = async (req: FastifyRequest, reply: FastifyReply) => {
   try {
-    const { propertyId, jobId } = req.body;
+    const { propertyId, jobId } = (req.body as any);
     
     const property = await prisma.property.findUnique({
       where: { id: propertyId }
     });
 
     if (!property) {
-      return res.status(400).json({ error: 'Property not found' });
+      return reply.status(400).send({ error: 'Property not found' });
     }
 
     const propCoords = geocodeProperty(property);
@@ -106,7 +106,7 @@ export const emergencyDispatch = async (req: Request, res: Response) => {
     }
 
     if (!nearestTech) {
-      return res.status(404).json({ error: 'No available technicians found nearby' });
+      return reply.status(404).send({ error: 'No available technicians found nearby' });
     }
 
     const updatedJob = await prisma.job.update({
@@ -119,7 +119,7 @@ export const emergencyDispatch = async (req: Request, res: Response) => {
 
     eventBus.broadcast('job_assigned', updatedJob);
 
-    res.json({
+    reply.send({
       message: `Emergency dispatch assigned to ${nearestTech.user.firstName} ${nearestTech.user.lastName}`,
       technician: nearestTech,
       job: updatedJob,
@@ -128,11 +128,11 @@ export const emergencyDispatch = async (req: Request, res: Response) => {
 
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Internal server error' });
+    reply.status(500).send({ error: 'Internal server error' });
   }
 };
 
-export const autoSchedule = async (req: Request, res: Response) => {
+export const autoSchedule = async (req: FastifyRequest, reply: FastifyReply) => {
   try {
     const unassignedJobs = await prisma.job.findMany({ where: { technicianId: null, status: 'draft' }});
     const techs = await prisma.technician.findMany({ where: { status: 'available' }});
@@ -143,15 +143,15 @@ export const autoSchedule = async (req: Request, res: Response) => {
       estimatedDriveTimeMins: 15
     }));
     
-    res.json(schedule);
+    reply.send(schedule);
   } catch (err) {
-    res.status(500).json({ error: 'Failed' });
+    reply.status(500).send({ error: 'Failed' });
   }
 };
 
-export const commitSchedule = async (req: Request, res: Response) => {
+export const commitSchedule = async (req: FastifyRequest, reply: FastifyReply) => {
   try {
-    const { schedule } = req.body;
+    const { schedule } = (req.body as any);
     for (const item of schedule) {
       if (item.technicianId) {
         await prisma.job.update({
@@ -160,8 +160,8 @@ export const commitSchedule = async (req: Request, res: Response) => {
         });
       }
     }
-    res.json({ success: true });
+    reply.send({ success: true });
   } catch (err) {
-    res.status(500).json({ error: 'Failed' });
+    reply.status(500).send({ error: 'Failed' });
   }
 };

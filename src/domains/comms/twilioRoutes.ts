@@ -1,13 +1,15 @@
-import { Router } from 'express';
+import { FastifyPluginAsync } from 'fastify';
 import { TwilioWebhookController } from './TwilioWebhookController';
-import express from 'express';
 
-const router = Router();
+
+const routes: FastifyPluginAsync = async (fastify, opts) => {
 
 // Twilio webhooks are form-urlencoded
-router.use(express.urlencoded({ extended: true }));
+fastify.use(express.urlencoded({ extended: true }));
 
-router.post('/sms', TwilioWebhookController.handleInboundSms);
-router.post('/voice-gather', TwilioWebhookController.handleVoiceGather);
+fastify.post('/sms', TwilioWebhookController.handleInboundSms);
+fastify.post('/voice-gather', TwilioWebhookController.handleVoiceGather);
 
-export default router;
+};
+
+export default routes;

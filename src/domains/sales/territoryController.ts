@@ -1,9 +1,9 @@
-import { Request, Response } from 'express';
+import { FastifyRequest, FastifyReply } from 'fastify';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-export const getTerritories = async (req: Request, res: Response) => {
+export const getTerritories = async (req: FastifyRequest, reply: FastifyReply) => {
   try {
     const tenantId = (req as any).user?.tenantId || '00000000-0000-0000-0000-000000000000';
     const territories = await prisma.territory.findMany({
@@ -45,16 +45,16 @@ export const getTerritories = async (req: Request, res: Response) => {
       };
     });
 
-    res.json(enriched);
+    reply.send(enriched);
   } catch (error) {
     console.error('Error fetching territories:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    reply.status(500).send({ error: 'Internal server error' });
   }
 };
 
-export const getTerritoryById = async (req: Request, res: Response) => {
+export const getTerritoryById = async (req: FastifyRequest, reply: FastifyReply) => {
   try {
-    const { id } = req.params;
+    const { id } = (req.params as any);
     const territory = await prisma.territory.findUnique({
       where: { id },
       include: {
@@ -69,17 +69,17 @@ export const getTerritoryById = async (req: Request, res: Response) => {
     });
 
     if (!territory) {
-      return res.status(404).json({ error: 'Territory not found' });
+      return reply.status(404).send({ error: 'Territory not found' });
     }
 
-    res.json(territory);
+    reply.send(territory);
   } catch (error) {
     console.error('Error fetching territory:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    reply.status(500).send({ error: 'Internal server error' });
   }
 };
 
-export const createTerritory = async (req: Request, res: Response) => {
+export const createTerritory = async (req: FastifyRequest, reply: FastifyReply) => {
   try {
     const tenantId = (req as any).user?.tenantId || '00000000-0000-0000-0000-000000000000';
     const {
@@ -89,10 +89,10 @@ export const createTerritory = async (req: Request, res: Response) => {
       color,
       polygonCoordinates,
       quotaTarget
-    } = req.body;
+    } = (req.body as any);
 
     if (!name || !polygonCoordinates) {
-      return res.status(400).json({ error: 'name and polygonCoordinates are required' });
+      return reply.status(400).send({ error: 'name and polygonCoordinates are required' });
     }
 
     const territory = await prisma.territory.create({
@@ -113,16 +113,16 @@ export const createTerritory = async (req: Request, res: Response) => {
       }
     });
 
-    res.status(201).json(territory);
+    reply.status(201).send(territory);
   } catch (error) {
     console.error('Error creating territory:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    reply.status(500).send({ error: 'Internal server error' });
   }
 };
 
-export const updateTerritory = async (req: Request, res: Response) => {
+export const updateTerritory = async (req: FastifyRequest, reply: FastifyReply) => {
   try {
-    const { id } = req.params;
+    const { id } = (req.params as any);
     const {
       name,
       description,
@@ -131,7 +131,7 @@ export const updateTerritory = async (req: Request, res: Response) => {
       polygonCoordinates,
       quotaTarget,
       isActive
-    } = req.body;
+    } = (req.body as any);
 
     const data: any = {};
     if (name !== undefined) data.name = name;
@@ -152,27 +152,27 @@ export const updateTerritory = async (req: Request, res: Response) => {
       }
     });
 
-    res.json(updated);
+    reply.send(updated);
   } catch (error) {
     console.error('Error updating territory:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    reply.status(500).send({ error: 'Internal server error' });
   }
 };
 
-export const deleteTerritory = async (req: Request, res: Response) => {
+export const deleteTerritory = async (req: FastifyRequest, reply: FastifyReply) => {
   try {
-    const { id } = req.params;
+    const { id } = (req.params as any);
     await prisma.territory.delete({ where: { id } });
-    res.json({ success: true, message: 'Territory deleted successfully' });
+    reply.send({ success: true, message: 'Territory deleted successfully' });
   } catch (error) {
     console.error('Error deleting territory:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    reply.status(500).send({ error: 'Internal server error' });
   }
 };
 
-export const getTerritoryAnalytics = async (req: Request, res: Response) => {
+export const getTerritoryAnalytics = async (req: FastifyRequest, reply: FastifyReply) => {
   try {
-    const { id } = req.params;
+    const { id } = (req.params as any);
     const territory = await prisma.territory.findUnique({
       where: { id },
       include: {
@@ -183,7 +183,7 @@ export const getTerritoryAnalytics = async (req: Request, res: Response) => {
     });
 
     if (!territory) {
-      return res.status(404).json({ error: 'Territory not found' });
+      return reply.status(404).send({ error: 'Territory not found' });
     }
 
     const totalKnocked = territory.canvassPins.length;
@@ -196,7 +196,7 @@ export const getTerritoryAnalytics = async (req: Request, res: Response) => {
     const quota = Number(territory.quotaTarget) || 0;
     const quotaAttainment = quota > 0 ? Math.round((sold / quota) * 100) : 100;
 
-    res.json({
+    reply.send({
       territoryId: territory.id,
       name: territory.name,
       assignedRep: territory.assignedRep ? {
@@ -215,11 +215,11 @@ export const getTerritoryAnalytics = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Error getting territory analytics:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    reply.status(500).send({ error: 'Internal server error' });
   }
 };
 
-export const getDoNotKnockList = async (req: Request, res: Response) => {
+export const getDoNotKnockList = async (req: FastifyRequest, reply: FastifyReply) => {
   try {
     const tenantId = (req as any).user?.tenantId || '00000000-0000-0000-0000-000000000000';
     const records = await prisma.doNotKnockRecord.findMany({
@@ -227,20 +227,20 @@ export const getDoNotKnockList = async (req: Request, res: Response) => {
       include: { territory: { select: { id: true, name: true } } },
       orderBy: { createdAt: 'desc' }
     });
-    res.json(records);
+    reply.send(records);
   } catch (error) {
     console.error('Error fetching DNK records:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    reply.status(500).send({ error: 'Internal server error' });
   }
 };
 
-export const createDoNotKnock = async (req: Request, res: Response) => {
+export const createDoNotKnock = async (req: FastifyRequest, reply: FastifyReply) => {
   try {
     const tenantId = (req as any).user?.tenantId || '00000000-0000-0000-0000-000000000000';
-    const { address, lat, lng, reason, territoryId, expiresAt } = req.body;
+    const { address, lat, lng, reason, territoryId, expiresAt } = (req.body as any);
 
     if (!address) {
-      return res.status(400).json({ error: 'address is required' });
+      return reply.status(400).send({ error: 'address is required' });
     }
 
     const record = await prisma.doNotKnockRecord.create({
@@ -255,20 +255,20 @@ export const createDoNotKnock = async (req: Request, res: Response) => {
       }
     });
 
-    res.status(201).json(record);
+    reply.status(201).send(record);
   } catch (error) {
     console.error('Error creating DNK record:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    reply.status(500).send({ error: 'Internal server error' });
   }
 };
 
-export const deleteDoNotKnock = async (req: Request, res: Response) => {
+export const deleteDoNotKnock = async (req: FastifyRequest, reply: FastifyReply) => {
   try {
-    const { id } = req.params;
+    const { id } = (req.params as any);
     await prisma.doNotKnockRecord.delete({ where: { id } });
-    res.json({ success: true, message: 'Do Not Knock restriction removed' });
+    reply.send({ success: true, message: 'Do Not Knock restriction removed' });
   } catch (error) {
     console.error('Error deleting DNK record:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    reply.status(500).send({ error: 'Internal server error' });
   }
 };

@@ -1,27 +1,27 @@
-import { Request, Response } from 'express';
+import { FastifyRequest, FastifyReply } from 'fastify';
 import { PrismaClient } from '@prisma/client';
 import { AuthRequest } from '../../shared/middleware/authMiddleware';
 
 const prisma = new PrismaClient();
 
-export const getInventoryItems = async (req: AuthRequest, res: Response) => {
+export const getInventoryItems = async (req: AuthRequest, reply: FastifyReply) => {
   try {
     const tenantId = req.user?.tenantId;
     const items = await prisma.inventoryItem.findMany({
       where: { tenantId },
       orderBy: { name: 'asc' }
     });
-    res.json(items);
+    reply.send(items);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Internal server error' });
+    reply.status(500).send({ error: 'Internal server error' });
   }
 };
 
-export const createInventoryItem = async (req: AuthRequest, res: Response) => {
+export const createInventoryItem = async (req: AuthRequest, reply: FastifyReply) => {
   try {
     const tenantId = req.user?.tenantId!;
-    const { name, sku, quantity, minimumThreshold, unitCost, location } = req.body;
+    const { name, sku, quantity, minimumThreshold, unitCost, location } = (req.body as any);
     
     const item = await prisma.inventoryItem.create({
       data: {
@@ -34,17 +34,17 @@ export const createInventoryItem = async (req: AuthRequest, res: Response) => {
         location,
       }
     });
-    res.status(201).json(item);
+    reply.status(201).send(item);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Internal server error' });
+    reply.status(500).send({ error: 'Internal server error' });
   }
 };
 
-export const updateInventoryQuantity = async (req: AuthRequest, res: Response) => {
+export const updateInventoryQuantity = async (req: AuthRequest, reply: FastifyReply) => {
   try {
-    const { id } = req.params;
-    const { quantityDelta } = req.body; // positive to add, negative to consume
+    const { id } = (req.params as any);
+    const { quantityDelta } = (req.body as any); // positive to add, negative to consume
     
     const item = await prisma.inventoryItem.update({
       where: { id },
@@ -52,14 +52,14 @@ export const updateInventoryQuantity = async (req: AuthRequest, res: Response) =
         quantity: { increment: parseInt(quantityDelta) }
       }
     });
-    res.json(item);
+    reply.send(item);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Internal server error' });
+    reply.status(500).send({ error: 'Internal server error' });
   }
 };
 
-export const getPurchaseOrders = async (req: AuthRequest, res: Response) => {
+export const getPurchaseOrders = async (req: AuthRequest, reply: FastifyReply) => {
   try {
     const tenantId = req.user?.tenantId;
     const pos = await prisma.purchaseOrder.findMany({
@@ -67,17 +67,17 @@ export const getPurchaseOrders = async (req: AuthRequest, res: Response) => {
       include: { item: true },
       orderBy: { createdAt: 'desc' }
     });
-    res.json(pos);
+    reply.send(pos);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Internal server error' });
+    reply.status(500).send({ error: 'Internal server error' });
   }
 };
 
-export const createPurchaseOrder = async (req: AuthRequest, res: Response) => {
+export const createPurchaseOrder = async (req: AuthRequest, reply: FastifyReply) => {
   try {
     const tenantId = req.user?.tenantId!;
-    const { itemId, quantity, expectedDeliveryDate } = req.body;
+    const { itemId, quantity, expectedDeliveryDate } = (req.body as any);
     
     const po = await prisma.purchaseOrder.create({
       data: {
@@ -88,15 +88,15 @@ export const createPurchaseOrder = async (req: AuthRequest, res: Response) => {
       },
       include: { item: true }
     });
-    res.status(201).json(po);
+    reply.status(201).send(po);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Internal server error' });
+    reply.status(500).send({ error: 'Internal server error' });
   }
 };
 
 // Chemical Application Tracking with Inventory Auto-Deduction
-export const recordChemicalApplication = async (req: AuthRequest, res: Response) => {
+export const recordChemicalApplication = async (req: AuthRequest, reply: FastifyReply) => {
   try {
     const tenantId = req.user?.tenantId;
     const {
@@ -110,10 +110,10 @@ export const recordChemicalApplication = async (req: AuthRequest, res: Response)
       photoUrl,
       inventoryItemId,
       epaRegistrationNo
-    } = req.body;
+    } = (req.body as any);
 
     if (!jobId || !technicianId || !chemicalName || quantityUsed === undefined || !unit) {
-      return res.status(400).json({ error: 'Missing required chemical application log fields' });
+      return reply.status(400).send({ error: 'Missing required chemical application log fields' });
     }
 
     const qty = parseFloat(quantityUsed) || 0;
@@ -178,21 +178,21 @@ export const recordChemicalApplication = async (req: AuthRequest, res: Response)
       }
     }
 
-    res.status(201).json({
+    reply.status(201).send({
       chemicalLog: chemLog,
       updatedInventory,
       autoPoCreated
     });
   } catch (error) {
     console.error('Error recording chemical application:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    reply.status(500).send({ error: 'Internal server error' });
   }
 };
 
 // EPA Compliance & Chemical Usage Report
-export const getEpaComplianceReport = async (req: AuthRequest, res: Response) => {
+export const getEpaComplianceReport = async (req: AuthRequest, reply: FastifyReply) => {
   try {
-    const { startDate, endDate } = req.query;
+    const { startDate, endDate } = (req.query as any);
 
     const whereClause: any = {};
     if (startDate || endDate) {
@@ -251,7 +251,7 @@ export const getEpaComplianceReport = async (req: AuthRequest, res: Response) =>
       targetPests: Array.from(s.targetPests)
     }));
 
-    res.json({
+    reply.send({
       reportPeriod: { startDate: startDate || null, endDate: endDate || null },
       totalApplications: logs.length,
       chemicalSummary: summary,
@@ -259,6 +259,6 @@ export const getEpaComplianceReport = async (req: AuthRequest, res: Response) =>
     });
   } catch (error) {
     console.error('Error generating EPA compliance report:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    reply.status(500).send({ error: 'Internal server error' });
   }
 };

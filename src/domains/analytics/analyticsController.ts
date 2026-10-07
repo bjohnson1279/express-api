@@ -1,10 +1,10 @@
-import { Request, Response } from 'express';
+import { FastifyRequest, FastifyReply } from 'fastify';
 import { PrismaClient } from '@prisma/client';
 import PDFDocument from 'pdfkit';
 
 const prisma = new PrismaClient();
 
-export const getDashboardAnalytics = async (req: Request, res: Response) => {
+export const getDashboardAnalytics = async (req: FastifyRequest, reply: FastifyReply) => {
   try {
     const contracts = await prisma.serviceContract.findMany({
       where: { status: 'active' }
@@ -56,7 +56,7 @@ export const getDashboardAnalytics = async (req: Request, res: Response) => {
       }
     });
 
-    res.json({
+    reply.send({
       mrr,
       arr: mrr * 12,
       totalCommissions,
@@ -67,63 +67,63 @@ export const getDashboardAnalytics = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Internal server error' });
+    reply.status(500).send({ error: 'Internal server error' });
   }
 };
 
 import { PestRiskService } from './PestRiskService';
 import { ClimateService } from './ClimateService';
 
-export const getClimateMetrics = async (req: Request, res: Response) => {
+export const getClimateMetrics = async (req: FastifyRequest, reply: FastifyReply) => {
   try {
-    const lat = req.query.lat ? parseFloat(String(req.query.lat)) : 39.7817;
-    const lng = req.query.lng ? parseFloat(String(req.query.lng)) : -89.6501;
+    const lat = (req.query as any).lat ? parseFloat(String((req.query as any).lat)) : 39.7817;
+    const lng = (req.query as any).lng ? parseFloat(String((req.query as any).lng)) : -89.6501;
 
     const climate = await ClimateService.getClimateData(lat, lng);
-    res.json(climate);
+    reply.send(climate);
   } catch (error: any) {
     console.error('Error fetching climate data:', error);
-    res.status(500).json({ error: error.message || 'Internal server error' });
+    reply.status(500).send({ error: error.message || 'Internal server error' });
   }
 };
 
 
-export const getPropertyPestRisk = async (req: Request, res: Response) => {
+export const getPropertyPestRisk = async (req: FastifyRequest, reply: FastifyReply) => {
   try {
-    const { propertyId } = req.params;
+    const { propertyId } = (req.params as any);
     const tenantId = (req as any).tenantId || req.headers['x-tenant-id'] || '3fa85f64-5717-4562-b3fc-2c963f66afa6';
 
     const prediction = await PestRiskService.calculatePropertyRisk(propertyId, String(tenantId));
-    res.json(prediction);
+    reply.send(prediction);
   } catch (error: any) {
     console.error('Error calculating pest risk:', error);
-    res.status(500).json({ error: error.message || 'Internal server error' });
+    reply.status(500).send({ error: error.message || 'Internal server error' });
   }
 };
 
-export const getPestRiskHeatmap = async (req: Request, res: Response) => {
+export const getPestRiskHeatmap = async (req: FastifyRequest, reply: FastifyReply) => {
   try {
     const tenantId = (req as any).tenantId || req.headers['x-tenant-id'] || '3fa85f64-5717-4562-b3fc-2c963f66afa6';
     const heatmap = await PestRiskService.getHeatmapData(String(tenantId));
-    res.json(heatmap);
+    reply.send(heatmap);
   } catch (error: any) {
     console.error('Error fetching pest risk heatmap:', error);
-    res.status(500).json({ error: error.message || 'Internal server error' });
+    reply.status(500).send({ error: error.message || 'Internal server error' });
   }
 };
 
-export const recalculatePestRisks = async (req: Request, res: Response) => {
+export const recalculatePestRisks = async (req: FastifyRequest, reply: FastifyReply) => {
   try {
     const tenantId = (req as any).tenantId || req.headers['x-tenant-id'] || '3fa85f64-5717-4562-b3fc-2c963f66afa6';
     const heatmap = await PestRiskService.getHeatmapData(String(tenantId));
-    res.json({ success: true, count: heatmap.length, records: heatmap });
+    reply.send({ success: true, count: heatmap.length, records: heatmap });
   } catch (error: any) {
     console.error('Error recalculating pest risks:', error);
-    res.status(500).json({ error: error.message || 'Internal server error' });
+    reply.status(500).send({ error: error.message || 'Internal server error' });
   }
 };
 
-export const getLaborCosts = async (req: Request, res: Response) => {
+export const getLaborCosts = async (req: FastifyRequest, reply: FastifyReply) => {
   try {
     const jobs = await prisma.job.findMany({
       where: { status: 'completed', onSiteTimeMinutes: { not: null } },
@@ -144,19 +144,19 @@ export const getLaborCosts = async (req: Request, res: Response) => {
       }
     });
 
-    res.json(Object.values(laborAnalytics));
+    reply.send(Object.values(laborAnalytics));
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Internal server error' });
+    reply.status(500).send({ error: 'Internal server error' });
   }
 };
 
 
 import { Parser } from 'json2csv';
 
-export const exportReport = async (req: Request, res: Response) => {
+export const exportReport = async (req: FastifyRequest, reply: FastifyReply) => {
   try {
-    const { format = 'csv', type = 'revenue' } = req.query;
+    const { format = 'csv', type = 'revenue' } = (req.query as any);
 
     let data: any[] = [];
     if (type === 'productivity') {
@@ -190,7 +190,7 @@ export const exportReport = async (req: Request, res: Response) => {
         Customer: u.job?.customer?.name || 'Unknown'
       }));
     } else {
-      return res.status(400).json({ error: 'Unsupported report type. Use revenue, productivity, or chemicals.' });
+      return reply.status(400).send({ error: 'Unsupported report type. Use revenue, productivity, or chemicals.' });
     }
 
     if (data.length === 0) {
@@ -200,13 +200,13 @@ export const exportReport = async (req: Request, res: Response) => {
     if (format === 'csv') {
       const json2csvParser = new Parser();
       const csv = json2csvParser.parse(data);
-      res.header('Content-Type', 'text/csv');
-      res.attachment(`${type}-report.csv`);
-      return res.send(csv);
+      reply.header('Content-Type', 'text/csv');
+      reply.attachment(`${type}-report.csv`);
+      return reply.send(csv);
     } else if (format === 'pdf') {
       const doc = new PDFDocument();
-      res.header('Content-Type', 'application/pdf');
-      res.attachment(`${type}-report.pdf`);
+      reply.header('Content-Type', 'application/pdf');
+      reply.attachment(`${type}-report.pdf`);
       doc.pipe(res);
 
       doc.fontSize(20).text(`${String(type).toUpperCase()} REPORT`, { align: 'center' });
@@ -219,10 +219,10 @@ export const exportReport = async (req: Request, res: Response) => {
 
       doc.end();
     } else {
-      res.status(400).json({ error: 'Unsupported format type. Use csv or pdf' });
+      reply.status(400).send({ error: 'Unsupported format type. Use csv or pdf' });
     }
   } catch (error) {
     console.error('Error generating report:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    reply.status(500).send({ error: 'Internal server error' });
   }
 };

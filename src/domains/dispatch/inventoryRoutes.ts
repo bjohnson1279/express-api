@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { FastifyPluginAsync } from 'fastify';
 import { 
   getInventoryItems, 
   createInventoryItem, 
@@ -9,19 +9,21 @@ import {
   getEpaComplianceReport
 } from './inventoryController';
 
-const router = Router();
+const routes: FastifyPluginAsync = async (fastify, opts) => {
 
-router.get('/items', getInventoryItems);
-router.post('/items', createInventoryItem);
-router.patch('/items/:id/quantity', updateInventoryQuantity);
+fastify.get('/items', getInventoryItems);
+fastify.post('/items', createInventoryItem);
+fastify.patch('/items/:id/quantity', updateInventoryQuantity);
 
-router.get('/orders', getPurchaseOrders);
-router.get('/purchase-orders', getPurchaseOrders);
-router.post('/orders', createPurchaseOrder);
-router.post('/purchase-orders', createPurchaseOrder);
+fastify.get('/orders', getPurchaseOrders);
+fastify.get('/purchase-orders', getPurchaseOrders);
+fastify.post('/orders', createPurchaseOrder);
+fastify.post('/purchase-orders', createPurchaseOrder);
 
 // Chemical logging & EPA Compliance
-router.post('/chemical-logs', recordChemicalApplication);
-router.get('/epa-report', getEpaComplianceReport);
+fastify.post('/chemical-logs', recordChemicalApplication);
+fastify.get('/epa-report', getEpaComplianceReport);
 
-export default router;
+};
+
+export default routes;

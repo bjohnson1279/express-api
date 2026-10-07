@@ -1,10 +1,12 @@
-import { Router } from 'express';
+import { FastifyPluginAsync } from 'fastify';
 import { getCampaigns, createCampaign, scheduleFollowup } from './marketingController';
 
-const router = Router();
+const routes: FastifyPluginAsync = async (fastify, opts) => {
 
-router.get('/campaigns', getCampaigns);
-router.post('/campaigns', createCampaign);
-router.post('/followups', scheduleFollowup);
+fastify.get('/campaigns', getCampaigns);
+fastify.post('/campaigns', createCampaign);
+fastify.post('/followups', scheduleFollowup);
 
-export default router;
+};
+
+export default routes;

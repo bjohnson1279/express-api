@@ -1,9 +1,9 @@
-import { Request, Response } from 'express';
+import { FastifyRequest, FastifyReply } from 'fastify';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-export const getCustomers = async (req: Request, res: Response) => {
+export const getCustomers = async (req: FastifyRequest, reply: FastifyReply) => {
   try {
     const customers = await prisma.customer.findMany({
       include: {
@@ -11,16 +11,16 @@ export const getCustomers = async (req: Request, res: Response) => {
         properties: true
       }
     });
-    res.json(customers);
+    reply.send(customers);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Internal server error' });
+    reply.status(500).send({ error: 'Internal server error' });
   }
 };
 
-export const getCustomer = async (req: Request, res: Response) => {
+export const getCustomer = async (req: FastifyRequest, reply: FastifyReply) => {
   try {
-    const { id } = req.params;
+    const { id } = (req.params as any);
     const customer = await prisma.customer.findUnique({
       where: { id },
       include: {
@@ -41,18 +41,18 @@ export const getCustomer = async (req: Request, res: Response) => {
       }
     });
     if (!customer) {
-      return res.status(404).json({ error: 'Not found' });
+      return reply.status(404).send({ error: 'Not found' });
     }
-    res.json(customer);
+    reply.send(customer);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Internal server error' });
+    reply.status(500).send({ error: 'Internal server error' });
   }
 };
 
-export const getPreferences = async (req: Request, res: Response) => {
+export const getPreferences = async (req: FastifyRequest, reply: FastifyReply) => {
   try {
-    const { id } = req.params;
+    const { id } = (req.params as any);
     let prefs = await prisma.notificationPreference.findUnique({
       where: { customerId: id }
     });
@@ -61,17 +61,17 @@ export const getPreferences = async (req: Request, res: Response) => {
         data: { customerId: id }
       });
     }
-    res.json(prefs);
+    reply.send(prefs);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Internal server error' });
+    reply.status(500).send({ error: 'Internal server error' });
   }
 };
 
-export const updatePreferences = async (req: Request, res: Response) => {
+export const updatePreferences = async (req: FastifyRequest, reply: FastifyReply) => {
   try {
-    const { id } = req.params;
-    const { smsEnabled, emailEnabled, voiceEnabled, pushEnabled, quietHoursStart, quietHoursEnd } = req.body;
+    const { id } = (req.params as any);
+    const { smsEnabled, emailEnabled, voiceEnabled, pushEnabled, quietHoursStart, quietHoursEnd } = (req.body as any);
     
     // Check if opting out
     let optOutTimestamp = undefined;
@@ -103,9 +103,9 @@ export const updatePreferences = async (req: Request, res: Response) => {
         optOutTimestamp: (smsEnabled === false && emailEnabled === false) ? new Date() : null
       }
     });
-    res.json(prefs);
+    reply.send(prefs);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Internal server error' });
+    reply.status(500).send({ error: 'Internal server error' });
   }
 };

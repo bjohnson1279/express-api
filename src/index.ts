@@ -1,5 +1,6 @@
-import express, { Request, Response } from 'express';
-import cors from 'cors';
+import fastifyLib, { FastifyRequest, FastifyReply } from 'fastify';
+import fastifyCors from '@fastify/cors';
+import fastifyMultipart from '@fastify/multipart';
 import dotenv from 'dotenv';
 import path from 'path';
 
@@ -51,93 +52,108 @@ import { auditMiddleware } from './shared/middleware/auditMiddleware';
 
 dotenv.config();
 
-const expressApp = express();
-const app = expressApp; // temp alias for routes
-
+const fastify = fastifyLib({ logger: true, trustProxy: true });
 const port = process.env.PORT || 8000;
 
-// Need trust proxy if behind load balancer/docker proxy
-app.set('trust proxy', 1);
-
-app.use(cors());
-app.use(express.json());
-
-// Apply rate limiting and usage metering globally to all API routes
-app.use('/api', apiLimiter);
-app.use('/api', usageMetering);
-app.use('/api', auditMiddleware);
-
-// === Dispatch Domain ===
-app.use('/api/v1/jobs', verifyToken, jobRoutes);
-app.use('/api/v1/technicians', verifyToken, technicianRoutes);
-app.use('/api/v1/dispatch', verifyToken, requireRole(['SUPER_ADMIN', 'DISPATCHER', 'MANAGER']), dispatchRoutes);
-app.use('/api/v1/routing', routingRoutes);
-app.use('/api/v1/inventory', verifyToken, requireRole(['SUPER_ADMIN', 'MANAGER']), inventoryRoutes);
-app.use('/api/v1/booking', bookingRoutes);
-
-// === Billing Domain ===
-app.use('/api/v1/finance', verifyToken, requireRole(['SUPER_ADMIN', 'MANAGER']), financeRoutes);
-
-// === CRM Domain ===
-app.use('/api/v1/customers', verifyToken, customerRoutes);
-app.use('/api/v1/contracts', verifyToken, contractRoutes);
-app.use('/api/v1/properties', propertyRoutes);
-app.use('/api/v1/surveys', surveyRoutes);
-
-// === Communications Domain ===
-app.use('/api/webhooks/twilio', twilioRoutes);
-app.use('/api/events', eventRoutes);
-app.use('/api/v1/comms/chat', chatRoutes);
-
-// === Sales Domain ===
-app.use('/api/v1/sales', verifyToken, requireRole(['SUPER_ADMIN', 'DOOR_TO_DOOR_SALES', 'MANAGER']), canvassRoutes);
-app.use('/api/v1/sales/territories', verifyToken, requireRole(['SUPER_ADMIN', 'DOOR_TO_DOOR_SALES', 'MANAGER']), territoryRoutes);
-app.use('/api/v1/agreements', agreementRoutes);
-app.use('/api/v1/marketing', verifyToken, requireRole(['SUPER_ADMIN', 'MANAGER']), marketingRoutes);
-
-// === HR Domain ===
-app.use('/api/v1/hr', verifyToken, requireRole(['SUPER_ADMIN', 'MANAGER']), hrRoutes);
-
-// === Analytics Domain ===
-app.use('/api/v1/analytics', verifyToken, analyticsRoutes);
-
-// Static files
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
-
-import { setupSwagger } from './swagger';
-
-// ... other imports above ...
-// Health Check
-app.get('/health', (req: Request, res: Response) => {
-  res.json({ status: 'ok', service: 'express-api' });
-});
-
-// Setup Swagger UI
-setupSwagger(expressApp, 'Servicing CRM - Express API', 'http://localhost:8002');
-
-
-import fastifyLib from 'fastify';
-import fastifyExpress from '@fastify/express';
-
-const fastify = fastifyLib({ logger: true });
-
 async function startFastify() {
-  await fastify.register(fastifyExpress);
-  fastify.use(expressApp);
-
-  fastify.listen({ port: typeof port === 'string' ? parseInt(port) : port, host: '0.0.0.0' }, () => {
-    console.log(`Fastify wrapper running on port ${port}`);
-    
-  console.log(`Express API running on port ${port}`);
+  await fastify.register(fastifyCors);
+  await fastify.register(fastifyMultipart);
   
-  // Start all domain crons
-  startNotificationCron();
-  startPreVisitNotificationCron();
-  startHealthScoreCron();
-  startJobGenerationCron();
-  startFollowUpCron();
-  startInventoryCron();
+  // Apply rate limiting and usage metering globally to all API routes
+  await fastify.register(apiLimiter);
+  
+  fastify.addHook('onResponse', usageMetering);
+  fastify.addHook('onResponse', auditMiddleware);
 
+  // === Dispatch Domain ===
+  fastify.register(async (app) => {
+    app.addHook('onRequest', verifyToken);
+    app.register(jobRoutes, { prefix: '/jobs' });
+    app.register(technicianRoutes, { prefix: '/technicians' });
+    
+    app.register(async (authApp) => {
+      authApp.addHook('onRequest', requireRole(['SUPER_ADMIN', 'DISPATCHER', 'MANAGER']));
+      authApp.register(dispatchRoutes, { prefix: '/dispatch' });
+    });
+    
+    app.register(async (authApp) => {
+      authApp.addHook('onRequest', requireRole(['SUPER_ADMIN', 'MANAGER']));
+      authApp.register(inventoryRoutes, { prefix: '/inventory' });
+    });
+  }, { prefix: '/api/v1' });
+
+  fastify.register(routingRoutes, { prefix: '/api/v1/routing' });
+  fastify.register(bookingRoutes, { prefix: '/api/v1/booking' });
+
+  // === Billing Domain ===
+  fastify.register(async (app) => {
+    app.addHook('onRequest', verifyToken);
+    app.addHook('onRequest', requireRole(['SUPER_ADMIN', 'MANAGER']));
+    app.register(financeRoutes, { prefix: '/finance' });
+  }, { prefix: '/api/v1' });
+
+  // === CRM Domain ===
+  fastify.register(async (app) => {
+    app.addHook('onRequest', verifyToken);
+    app.register(customerRoutes, { prefix: '/customers' });
+    app.register(contractRoutes, { prefix: '/contracts' });
+  }, { prefix: '/api/v1' });
+  
+  fastify.register(propertyRoutes, { prefix: '/api/v1/properties' });
+  fastify.register(surveyRoutes, { prefix: '/api/v1/surveys' });
+
+  // === Communications Domain ===
+  fastify.register(twilioRoutes, { prefix: '/api/webhooks/twilio' });
+  fastify.register(eventRoutes, { prefix: '/api/events' });
+  fastify.register(chatRoutes, { prefix: '/api/v1/comms/chat' });
+
+  // === Sales Domain ===
+  fastify.register(async (app) => {
+    app.addHook('onRequest', verifyToken);
+    
+    app.register(async (authApp) => {
+      authApp.addHook('onRequest', requireRole(['SUPER_ADMIN', 'DOOR_TO_DOOR_SALES', 'MANAGER']));
+      authApp.register(canvassRoutes, { prefix: '/sales' });
+      authApp.register(territoryRoutes, { prefix: '/sales/territories' });
+    });
+
+    app.register(async (authApp) => {
+      authApp.addHook('onRequest', requireRole(['SUPER_ADMIN', 'MANAGER']));
+      authApp.register(marketingRoutes, { prefix: '/marketing' });
+    });
+  }, { prefix: '/api/v1' });
+  
+  fastify.register(agreementRoutes, { prefix: '/api/v1/agreements' });
+
+  // === HR Domain ===
+  fastify.register(async (app) => {
+    app.addHook('onRequest', verifyToken);
+    app.addHook('onRequest', requireRole(['SUPER_ADMIN', 'MANAGER']));
+    app.register(hrRoutes, { prefix: '/hr' });
+  }, { prefix: '/api/v1' });
+
+  // === Analytics Domain ===
+  fastify.register(async (app) => {
+    app.addHook('onRequest', verifyToken);
+    app.register(analyticsRoutes, { prefix: '/analytics' });
+  }, { prefix: '/api/v1' });
+
+  // Health Check
+  fastify.get('/health', async (req: FastifyRequest, reply: FastifyReply) => {
+    reply.send({ status: 'ok', service: 'fastify-api' });
+  });
+
+  // Start Fastify
+  fastify.listen({ port: typeof port === 'string' ? parseInt(port) : port, host: '0.0.0.0' }, () => {
+    console.log(`Fastify API running on port ${port}`);
+    
+    // Start all domain crons
+    startNotificationCron();
+    startPreVisitNotificationCron();
+    startHealthScoreCron();
+    startJobGenerationCron();
+    startFollowUpCron();
+    startInventoryCron();
   });
 }
 

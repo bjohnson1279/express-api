@@ -1,6 +1,6 @@
-import rateLimit from 'express-rate-limit';
-import RedisStore from 'rate-limit-redis';
+import fastifyRateLimit from '@fastify/rate-limit';
 import Redis from 'ioredis';
+import { FastifyPluginAsync } from 'fastify';
 
 const redisHost = process.env.REDIS_HOST || 'localhost';
 const redisPort = process.env.REDIS_PORT ? parseInt(process.env.REDIS_PORT) : 6379;
@@ -12,26 +12,22 @@ export const redisClient = new Redis({
   password: redisPassword
 });
 
-// 100 requests per 15 minutes per user/tenant
-export const apiLimiter = rateLimit({
-  store: new RedisStore({
-    sendCommand: (...args: string[]) => redisClient.call(...args),
-  }),
-  windowMs: 15 * 60 * 1000, 
-  max: 100, 
-  standardHeaders: true, 
-  legacyHeaders: false, 
-  keyGenerator: (req: any) => {
-    // Rate limit per tenant + user, fallback to IP
-    if (req.user?.tenantId && req.user?.id) {
-      return `${req.user.tenantId}:${req.user.id}`;
+export const apiLimiter: FastifyPluginAsync = async (fastify, opts) => {
+  await fastify.register(fastifyRateLimit, {
+    max: 100,
+    timeWindow: 15 * 60 * 1000,
+    redis: redisClient,
+    keyGenerator: (req: any) => {
+      if (req.user?.tenantId && req.user?.id) {
+        return `${req.user.tenantId}:${req.user.id}`;
+      }
+      return req.ip || 'unknown-ip';
+    },
+    errorResponseBuilder: (req, context) => {
+      return {
+        error: 'Too Many Requests',
+        message: 'You have exceeded your API rate limit. Please try again later.'
+      };
     }
-    return req.ip || 'unknown-ip';
-  },
-  handler: (req, res, next, options) => {
-    res.status(429).json({
-      error: 'Too Many Requests',
-      message: 'You have exceeded your API rate limit. Please try again later.'
-    });
-  }
-});
+  });
+};

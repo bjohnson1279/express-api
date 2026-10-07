@@ -1,20 +1,22 @@
-import { Router } from 'express';
+import { FastifyPluginAsync } from 'fastify';
 import { ChatController } from './chatController';
 
-const router = Router();
+const routes: FastifyPluginAsync = async (fastify, opts) => {
 
 // Conversations
-router.get('/conversations', ChatController.getConversations);
-router.post('/conversations', ChatController.createConversation);
-router.get('/conversations/:id', ChatController.getConversation);
-router.patch('/conversations/:id', ChatController.updateConversation);
-router.put('/conversations/:id', ChatController.updateConversation);
+fastify.get('/conversations', ChatController.getConversations);
+fastify.post('/conversations', ChatController.createConversation);
+fastify.get('/conversations/:id', ChatController.getConversation);
+fastify.patch('/conversations/:id', ChatController.updateConversation);
+fastify.put('/conversations/:id', ChatController.updateConversation);
 
 // Messages
-router.post('/conversations/:id/messages', ChatController.sendMessage);
+fastify.post('/conversations/:id/messages', ChatController.sendMessage);
 
 // Canned Responses
-router.get('/canned-responses', ChatController.getCannedResponses);
-router.post('/canned-responses', ChatController.createCannedResponse);
+fastify.get('/canned-responses', ChatController.getCannedResponses);
+fastify.post('/canned-responses', ChatController.createCannedResponse);
 
-export default router;
+};
+
+export default routes;

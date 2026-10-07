@@ -1,9 +1,9 @@
-import { Router } from 'express';
+import { FastifyPluginAsync } from 'fastify';
 import multer from 'multer';
 import { PrismaClient } from '@prisma/client';
 import path from 'path';
 
-const router = Router();
+const routes: FastifyPluginAsync = async (fastify, opts) => {
 const prisma = new PrismaClient();
 
 const storage = multer.diskStorage({
@@ -16,13 +16,13 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-router.post('/:id/photos', upload.single('photo'), async (req, res) => {
+fastify.post('/:id/photos', upload.single('photo'), async (req, res) => {
   try {
-    const propertyId = req.params.id;
-    const { jobId, caption, tags } = req.body;
+    const propertyId = (req.params as any).id;
+    const { jobId, caption, tags } = (req.body as any);
     
     if (!req.file) {
-      return res.status(400).json({ error: 'No photo uploaded' });
+      return res.status(400).send({ error: 'No photo uploaded' });
     }
 
     const photo = await prisma.propertyPhoto.create({
@@ -35,25 +35,27 @@ router.post('/:id/photos', upload.single('photo'), async (req, res) => {
       }
     });
     
-    res.status(201).json(photo);
+    res.status(201).send(photo);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Failed to upload photo' });
+    res.status(500).send({ error: 'Failed to upload photo' });
   }
 });
 
-router.get('/:id/photos', async (req, res) => {
+fastify.get('/:id/photos', async (req, res) => {
   try {
-    const propertyId = req.params.id;
+    const propertyId = (req.params as any).id;
     const photos = await prisma.propertyPhoto.findMany({
       where: { propertyId },
       orderBy: { uploadedAt: 'desc' }
     });
-    res.json(photos);
+    res.send(photos);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Failed to retrieve photos' });
+    res.status(500).send({ error: 'Failed to retrieve photos' });
   }
 });
 
-export default router;
+};
+
+export default routes;

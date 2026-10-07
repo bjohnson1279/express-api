@@ -1,10 +1,12 @@
-import { Router } from 'express';
+import { FastifyPluginAsync } from 'fastify';
 import { generateAgreement, signAgreement, downloadAgreement } from './AgreementController';
 
-const router = Router();
+const routes: FastifyPluginAsync = async (fastify, opts) => {
 
-router.post('/', generateAgreement);
-router.post('/:id/sign', signAgreement);
-router.get('/:id/download', downloadAgreement);
+fastify.post('/', generateAgreement);
+fastify.post('/:id/sign', signAgreement);
+fastify.get('/:id/download', downloadAgreement);
 
-export default router;
+};
+
+export default routes;

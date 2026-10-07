@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { FastifyRequest, FastifyReply } from 'fastify';
 import { PrismaClient } from '@prisma/client';
 import multer from 'multer';
 import path from 'path';
@@ -25,13 +25,13 @@ export const upload = multer({ storage });
 
 export class OnboardingController {
   
-  static async uploadDocument(req: Request, res: Response) {
+  static async uploadDocument(req: FastifyRequest, reply: FastifyReply) {
     try {
-      const { userId, taskId, documentType } = req.body;
+      const { userId, taskId, documentType } = (req.body as any);
       const file = req.file;
 
       if (!file) {
-        return res.status(400).json({ error: 'No file uploaded' });
+        return reply.status(400).send({ error: 'No file uploaded' });
       }
 
       const document = await prisma.employeeDocument.create({
@@ -50,24 +50,24 @@ export class OnboardingController {
         });
       }
 
-      res.status(201).json({ success: true, document });
+      reply.status(201).send({ success: true, document });
     } catch (error) {
       console.error('Error uploading document:', error);
-      res.status(500).json({ error: 'Failed to upload document' });
+      reply.status(500).send({ error: 'Failed to upload document' });
     }
   }
 
-  static async getTasks(req: Request, res: Response) {
+  static async getTasks(req: FastifyRequest, reply: FastifyReply) {
     try {
-      const { userId } = req.params;
+      const { userId } = (req.params as any);
       const tasks = await prisma.employeeOnboardingTask.findMany({
         where: { userId },
         include: { checklist: true, documents: true }
       });
-      res.json({ tasks });
+      reply.send({ tasks });
     } catch (error) {
       console.error('Error fetching tasks:', error);
-      res.status(500).json({ error: 'Failed to fetch tasks' });
+      reply.status(500).send({ error: 'Failed to fetch tasks' });
     }
   }
 }

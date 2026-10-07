@@ -1,9 +1,11 @@
-import { Router } from 'express';
+import { FastifyPluginAsync } from 'fastify';
 import { getAvailableSlots, createBooking } from './bookingController';
 
-const router = Router();
+const routes: FastifyPluginAsync = async (fastify, opts) => {
 
-router.get('/slots', getAvailableSlots);
-router.post('/', createBooking);
+fastify.get('/slots', getAvailableSlots);
+fastify.post('/', createBooking);
 
-export default router;
+};
+
+export default routes;
