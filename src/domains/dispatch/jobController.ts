@@ -49,7 +49,7 @@ export const getJobsCalendar = async (req: FastifyRequest, reply: FastifyReply) 
       
       return {
         id: job.id,
-        title: `${job.customer.name} - ${job.property.address}`,
+        title: `${(job as any).purpose === 'return_visit' ? 'Return visit: ' : ''}${job.customer.name} - ${job.property.address}`,
         start: job.scheduledStart,
         end: job.scheduledEnd || new Date(job.scheduledStart!.getTime() + 60 * 60 * 1000), // Default 1hr
         status: job.status,

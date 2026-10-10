@@ -20,6 +20,7 @@ import financeRoutes from './domains/billing/financeRoutes';
 // Domain: CRM
 import customerRoutes from './domains/crm/customerRoutes';
 import contractRoutes from './domains/crm/contractRoutes';
+import callbackRoutes from './domains/crm/callbackRoutes';
 import propertyRoutes from './domains/crm/propertyRoutes';
 import surveyRoutes from './domains/crm/surveyRoutes';
 import { startHealthScoreCron } from './domains/crm/HealthScoreCron';
@@ -100,6 +101,7 @@ async function startFastify() {
   }, { prefix: '/api/v1' });
   
   fastify.register(propertyRoutes, { prefix: '/api/v1/properties' });
+  fastify.register(callbackRoutes, { prefix: '/api/v1/callbacks' });
   fastify.register(surveyRoutes, { prefix: '/api/v1/surveys' });
 
   // === Communications Domain ===
