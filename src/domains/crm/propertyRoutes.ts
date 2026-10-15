@@ -1,35 +1,22 @@
 import { FastifyPluginAsync } from 'fastify';
-import multer from 'multer';
+import { saveMultipartUpload } from '../../shared/multipartUpload';
 import { PrismaClient } from '@prisma/client';
 import path from 'path';
 
 const routes: FastifyPluginAsync = async (fastify, opts) => {
 const prisma = new PrismaClient();
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/photos');
-  },
-  filename: (req, file, cb) => {
-    cb(null, `${Date.now()}-${file.originalname}`);
-  }
-});
-const upload = multer({ storage });
-
-fastify.post('/:id/photos', upload.single('photo'), async (req, res) => {
+fastify.post('/:id/photos', async (req, res) => {
   try {
     const propertyId = (req.params as any).id;
-    const { jobId, caption, tags } = (req.body as any);
-    
-    if (!req.file) {
-      return res.status(400).send({ error: 'No photo uploaded' });
-    }
+    const file = await saveMultipartUpload(req, 'photo', path.join(process.cwd(), 'uploads/photos'));
+    const { jobId, caption, tags } = file.fields;
 
     const photo = await prisma.propertyPhoto.create({
       data: {
         propertyId,
         jobId: jobId || null,
-        url: `/uploads/photos/${req.file.filename}`,
+        url: `/uploads/photos/${file.filename}`,
         caption: caption || null,
         tags: tags ? JSON.parse(tags) : null,
       }
@@ -37,8 +24,9 @@ fastify.post('/:id/photos', upload.single('photo'), async (req, res) => {
     
     res.status(201).send(photo);
   } catch (error) {
+    const status = (error as { statusCode?: number }).statusCode || 500;
     console.error(error);
-    res.status(500).send({ error: 'Failed to upload photo' });
+    res.status(status).send({ error: status < 500 ? (error as Error).message : 'Failed to upload photo' });
   }
 });
 

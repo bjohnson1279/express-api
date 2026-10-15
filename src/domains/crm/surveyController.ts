@@ -22,7 +22,7 @@ export const createSurvey = async (req: FastifyRequest, reply: FastifyReply) => 
     // Queue an SMS/Email notification with the survey link
     const customer = await prisma.customer.findUnique({
       where: { id: customerId },
-      include: { user: true, phones: true, emails: true }
+      include: { user: { select: { id: true, tenantId: true, email: true, role: true, createdAt: true, updatedAt: true } }, phones: true, emails: true }
     });
 
     if (customer) {

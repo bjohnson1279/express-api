@@ -19,7 +19,7 @@ export class AgreementService {
       }
     });
 
-    const pdfPath = path.join(__dirname, `../../uploads/agreements/${agreement.id}.pdf`);
+    const pdfPath = path.join(process.cwd(), `uploads/agreements/${agreement.id}.pdf`);
     
     // Ensure directory exists
     const dir = path.dirname(pdfPath);

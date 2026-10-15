@@ -31,10 +31,15 @@ export const signAgreement = async (req: FastifyRequest, reply: FastifyReply) =>
 export const downloadAgreement = async (req: FastifyRequest, reply: FastifyReply) => {
   try {
     const { id } = (req.params as any);
-    const pdfPath = path.join(__dirname, `../../uploads/agreements/${id}.pdf`);
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+      return reply.status(400).send({ error: 'Invalid agreement ID' });
+    }
+    const pdfPath = path.join(process.cwd(), `uploads/agreements/${id}.pdf`);
     
     if (fs.existsSync(pdfPath)) {
-      reply.download(pdfPath);
+      return reply.type('application/pdf')
+        .header('Content-Disposition', 'attachment; filename="agreement.pdf"')
+        .send(fs.createReadStream(pdfPath));
     } else {
       reply.status(404).send({ error: 'Agreement PDF not found' });
     }

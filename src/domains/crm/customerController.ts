@@ -1,3 +1,4 @@
+import { SessionActor } from '../../shared/auth/session';
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { PrismaClient } from '@prisma/client';
 
@@ -5,9 +6,11 @@ const prisma = new PrismaClient();
 
 export const getCustomers = async (req: FastifyRequest, reply: FastifyReply) => {
   try {
+    const tenantId = ((req as any).user as SessionActor).tenantId;
     const customers = await prisma.customer.findMany({
+      where: { user: { tenantId } },
       include: {
-        user: true,
+        user: { select: { id: true, tenantId: true, email: true, role: true, createdAt: true, updatedAt: true } },
         properties: true
       }
     });
@@ -21,21 +24,21 @@ export const getCustomers = async (req: FastifyRequest, reply: FastifyReply) => 
 export const getCustomer = async (req: FastifyRequest, reply: FastifyReply) => {
   try {
     const { id } = (req.params as any);
-    const customer = await prisma.customer.findUnique({
-      where: { id },
+    const customer = await prisma.customer.findFirst({
+      where: { id, user: { tenantId: ((req as any).user as SessionActor).tenantId } },
       include: {
-        user: true,
+        user: { select: { id: true, tenantId: true, email: true, role: true, createdAt: true, updatedAt: true } },
         properties: true,
         contracts: true,
         jobs: {
           orderBy: { scheduledStart: 'asc' }
         },
         contactLogs: {
-          include: { user: true },
+          include: { user: { select: { id: true, tenantId: true, email: true, role: true, createdAt: true, updatedAt: true } } },
           orderBy: { chronologicalTimestamp: 'desc' }
         },
         internalNotes: {
-          include: { author: true },
+          include: { author: { select: { id: true, tenantId: true, email: true, role: true, createdAt: true, updatedAt: true } } },
           orderBy: { createdAt: 'desc' }
         }
       }
@@ -53,6 +56,8 @@ export const getCustomer = async (req: FastifyRequest, reply: FastifyReply) => {
 export const getPreferences = async (req: FastifyRequest, reply: FastifyReply) => {
   try {
     const { id } = (req.params as any);
+    const owned = await prisma.customer.findFirst({ where: { id, user: { tenantId: ((req as any).user as SessionActor).tenantId } }, select: { id: true } });
+    if (!owned) return reply.status(404).send({ error: 'Not found' });
     let prefs = await prisma.notificationPreference.findUnique({
       where: { customerId: id }
     });
@@ -71,6 +76,8 @@ export const getPreferences = async (req: FastifyRequest, reply: FastifyReply) =
 export const updatePreferences = async (req: FastifyRequest, reply: FastifyReply) => {
   try {
     const { id } = (req.params as any);
+    const owned = await prisma.customer.findFirst({ where: { id, user: { tenantId: ((req as any).user as SessionActor).tenantId } }, select: { id: true } });
+    if (!owned) return reply.status(404).send({ error: 'Not found' });
     const { smsEnabled, emailEnabled, voiceEnabled, pushEnabled, quietHoursStart, quietHoursEnd } = (req.body as any);
     
     // Check if opting out

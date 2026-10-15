@@ -208,7 +208,7 @@ export const getEpaComplianceReport = async (req: AuthRequest, reply: FastifyRep
           include: { customer: true, property: true }
         },
         technician: {
-          include: { user: true }
+          include: { user: { select: { id: true, tenantId: true, email: true, role: true, createdAt: true, updatedAt: true } } }
         },
         inventoryItem: true
       },

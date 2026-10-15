@@ -161,7 +161,7 @@ export const acceptQuote = async (req: AuthRequest, reply: FastifyReply) => {
     });
 
     // Publish event
-    eventBus.broadcast('quote_accepted', { quote, job: newJob });
+    eventBus.broadcast('quote_accepted', { quote, job: newJob }, (req as any).user.tenantId);
 
     reply.send({ quote, job: newJob });
   } catch (error) {

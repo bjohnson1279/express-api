@@ -11,7 +11,7 @@ export class ChatController {
   static async getConversations(req: FastifyRequest, reply: FastifyReply) {
     try {
       const { status, customerId, assignedCsrId } = (req.query as any);
-      const tenantId = (req as any).tenantId || req.headers['x-tenant-id'] || '3fa85f64-5717-4562-b3fc-2c963f66afa6';
+      const tenantId = (req as any).user.tenantId;
 
       const where: any = { tenantId: String(tenantId) };
       if (status && status !== 'ALL') {
@@ -82,7 +82,7 @@ export class ChatController {
   static async getConversation(req: FastifyRequest, reply: FastifyReply) {
     try {
       const { id } = (req.params as any);
-      const tenantId = (req as any).tenantId || req.headers['x-tenant-id'] || '3fa85f64-5717-4562-b3fc-2c963f66afa6';
+      const tenantId = (req as any).user.tenantId;
 
       const conversation = await prisma.chatConversation.findFirst({
         where: { id, tenantId: String(tenantId) },
@@ -136,12 +136,14 @@ export class ChatController {
   static async createConversation(req: FastifyRequest, reply: FastifyReply) {
     try {
       const { customerId, subject, initialMessage, senderType = 'CUSTOMER', senderName } = (req.body as any);
-      const tenantId = (req as any).tenantId || req.headers['x-tenant-id'] || '3fa85f64-5717-4562-b3fc-2c963f66afa6';
+      const tenantId = (req as any).user.tenantId;
 
       if (!customerId) {
         return reply.status(400).send({ error: 'customerId is required' });
       }
 
+      const customer = await prisma.customer.findFirst({ where: { id: customerId, user: { tenantId } }, select: { id: true } });
+      if (!customer) return reply.code(404).send({ error: 'Customer not found' });
       const conversation = await prisma.chatConversation.create({
         data: {
           tenantId: String(tenantId),
@@ -181,10 +183,10 @@ export class ChatController {
         eventBus.broadcast('chat_message', {
           conversationId: conversation.id,
           message: createdMessage
-        });
+        }, (req as any).user.tenantId);
       }
 
-      eventBus.broadcast('conversation_created', { conversation });
+      eventBus.broadcast('conversation_created', { conversation }, (req as any).user.tenantId);
 
       return reply.status(201).send({
         ...conversation,
@@ -203,7 +205,7 @@ export class ChatController {
     try {
       const { id } = (req.params as any);
       const { senderType = 'CSR', senderId, senderName, messageText } = (req.body as any);
-      const tenantId = (req as any).tenantId || req.headers['x-tenant-id'] || '3fa85f64-5717-4562-b3fc-2c963f66afa6';
+      const tenantId = (req as any).user.tenantId;
 
       if (!messageText || !messageText.trim()) {
         return reply.status(400).send({ error: 'messageText cannot be empty' });
@@ -237,7 +239,7 @@ export class ChatController {
         data: {
           lastMessageAt: new Date(),
           status: conversation.status === 'RESOLVED' ? 'OPEN' : newStatus,
-          assignedCsrId: (senderType === 'CSR' && senderId && !conversation.assignedCsrId) ? senderId : conversation.assignedCsrId
+          assignedCsrId: (senderType === 'CSR' && senderId && !conversation.assignedCsrId) ? (req as any).user.id : conversation.assignedCsrId
         }
       });
 
@@ -257,7 +259,7 @@ export class ChatController {
       eventBus.broadcast('chat_message', {
         conversationId: id,
         message
-      });
+      }, (req as any).user.tenantId);
 
       return reply.status(201).send(message);
     } catch (error: any) {
@@ -273,23 +275,27 @@ export class ChatController {
     try {
       const { id } = (req.params as any);
       const { status, assignedCsrId, subject } = (req.body as any);
-      const tenantId = (req as any).tenantId || req.headers['x-tenant-id'] || '3fa85f64-5717-4562-b3fc-2c963f66afa6';
+      const tenantId = (req as any).user.tenantId;
 
       const updateData: any = { updatedAt: new Date() };
       if (status) updateData.status = status;
+      if (assignedCsrId) {
+        const assignee = await prisma.user.findFirst({ where: { id: assignedCsrId, tenantId, role: { in: ['SUPER_ADMIN','MANAGER','CUSTOMER_SERVICE_REP'] } }, select: { id: true } });
+        if (!assignee) return reply.code(404).send({ error: 'Assignee not found' });
+      }
       if (assignedCsrId !== undefined) updateData.assignedCsrId = assignedCsrId;
       if (subject) updateData.subject = subject;
 
       const updated = await prisma.chatConversation.update({
-        where: { id },
+        where: { id, tenantId },
         data: updateData,
         include: {
           customer: true,
-          assignedCsr: true
+          assignedCsr: { select: { id: true, email: true, role: true } }
         }
       });
 
-      eventBus.broadcast('conversation_updated', { conversation: updated });
+      eventBus.broadcast('conversation_updated', { conversation: updated }, (req as any).user.tenantId);
 
       return reply.send(updated);
     } catch (error: any) {
@@ -303,7 +309,7 @@ export class ChatController {
    */
   static async getCannedResponses(req: FastifyRequest, reply: FastifyReply) {
     try {
-      const tenantId = (req as any).tenantId || req.headers['x-tenant-id'] || '3fa85f64-5717-4562-b3fc-2c963f66afa6';
+      const tenantId = (req as any).user.tenantId;
       const responses = await prisma.cannedResponse.findMany({
         where: { tenantId: String(tenantId) },
         orderBy: { shortcut: 'asc' }
@@ -321,7 +327,7 @@ export class ChatController {
   static async createCannedResponse(req: FastifyRequest, reply: FastifyReply) {
     try {
       const { shortcut, title, category = 'GENERAL', content } = (req.body as any);
-      const tenantId = (req as any).tenantId || req.headers['x-tenant-id'] || '3fa85f64-5717-4562-b3fc-2c963f66afa6';
+      const tenantId = (req as any).user.tenantId;
 
       if (!shortcut || !title || !content) {
         return reply.status(400).send({ error: 'shortcut, title, and content are required' });

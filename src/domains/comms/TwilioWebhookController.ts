@@ -13,10 +13,10 @@ export class TwilioWebhookController {
     try {
       // Find customer by phone number
       const customerPhone = await prisma.customerPhone.findFirst({
-        where: { phoneNumber: From },
+        where: { phoneNumber: From, customer: { user: { tenantId: (req as any).user.tenantId } } },
         include: { 
           customer: {
-            include: { user: true }
+            include: { user: { select: { id: true, tenantId: true, email: true, role: true, createdAt: true, updatedAt: true } } }
           }
         }
       });
@@ -37,7 +37,7 @@ export class TwilioWebhookController {
       // Respond with empty TwiML
       const twiml = new twilio.twiml.MessagingResponse();
       
-      eventBus.broadcast('sms_received', { From, Body, To });
+      eventBus.broadcast('sms_received', { From, Body, To }, (req as any).user.tenantId);
       
       reply.type('text/xml').send(twiml.toString());
     } catch (error) {

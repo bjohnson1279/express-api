@@ -64,21 +64,17 @@ export class HealthScoreService {
     }
 
     // Save to database
-    const healthScore = await prisma.customerHealthScore.upsert({
-      where: { customerId: customerId },
-      update: {
-        score,
-        riskLevel,
-        factors,
-        calculatedAt: new Date()
-      },
-      create: {
-        customerId,
-        score,
-        riskLevel,
-        factors,
-        calculatedAt: new Date()
-      }
+    const healthScore = await prisma.$transaction(async tx => {
+      // SQL permits score history; serialize refreshes on the customer instead of
+      // assuming a customer_id unique constraint that does not exist.
+      await tx.$queryRaw`SELECT id FROM customers WHERE id = ${customerId}::uuid FOR UPDATE`;
+      const existing = await tx.customerHealthScore.findFirst({
+        where: { customerId }, orderBy: [{ calculatedAt: 'desc' }, { id: 'desc' }]
+      });
+      const data = { score, riskLevel, factors, calculatedAt: new Date() };
+      return existing
+        ? tx.customerHealthScore.update({ where: { id: existing.id }, data })
+        : tx.customerHealthScore.create({ data: { customerId, ...data } });
     });
 
     return healthScore;

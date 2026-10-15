@@ -6,11 +6,10 @@ const redisHost = process.env.REDIS_HOST || 'localhost';
 const redisPort = process.env.REDIS_PORT ? parseInt(process.env.REDIS_PORT) : 6379;
 const redisPassword = process.env.REDIS_PASSWORD || 'redis_password';
 
-export const redisClient = new Redis({
-  host: redisHost,
-  port: redisPort,
-  password: redisPassword
-});
+export const redisClient = process.env.REDIS_URL
+  ? new Redis(process.env.REDIS_URL)
+  : new Redis({ host: redisHost, port: redisPort, password: redisPassword });
+
 
 export const apiLimiter: FastifyPluginAsync = async (fastify, opts) => {
   await fastify.register(fastifyRateLimit, {

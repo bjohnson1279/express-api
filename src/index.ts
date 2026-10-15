@@ -1,3 +1,5 @@
+import { requiredRoles } from './shared/auth/session';
+import authRoutes from './shared/auth/authRoutes';
 import fastifyLib, { FastifyRequest, FastifyReply } from 'fastify';
 import fastifyCors from '@fastify/cors';
 import fastifyMultipart from '@fastify/multipart';
@@ -21,6 +23,12 @@ import financeRoutes from './domains/billing/financeRoutes';
 import customerRoutes from './domains/crm/customerRoutes';
 import contractRoutes from './domains/crm/contractRoutes';
 import callbackRoutes from './domains/crm/callbackRoutes';
+import inspectionRoutes from './domains/crm/inspectionRoutes';
+import deviceRoutes from './domains/crm/deviceRoutes';
+import recurringRoutes from './domains/crm/recurringRoutes';
+import profitabilityRoutes from './domains/crm/profitabilityRoutes';
+import commercialRoutes from './domains/crm/commercialRoutes';
+import catalogRoutes from './domains/crm/catalogRoutes';
 import propertyRoutes from './domains/crm/propertyRoutes';
 import surveyRoutes from './domains/crm/surveyRoutes';
 import { startHealthScoreCron } from './domains/crm/HealthScoreCron';
@@ -66,6 +74,16 @@ async function startFastify() {
   fastify.addHook('onResponse', usageMetering);
   fastify.addHook('onResponse', auditMiddleware);
 
+  fastify.addHook('onRequest', async (req: any, reply) => {
+    const route = req.url.split('?')[0].replace(/\/$/, '');
+    if (req.method === 'OPTIONS' || route === '/health' || route === '/api/v1/health' || route === '/api/v1/auth/login') return;
+    await verifyToken(req, reply);
+    if (reply.sent) return;
+    const roles = requiredRoles(route);
+    if (roles && !roles.includes(req.user.role)) return reply.code(403).send({ error: 'Insufficient permissions' });
+  });
+  fastify.register(authRoutes, { prefix: '/api/v1/auth' });
+
   // === Dispatch Domain ===
   fastify.register(async (app) => {
     app.addHook('onRequest', verifyToken);
@@ -102,6 +120,12 @@ async function startFastify() {
   
   fastify.register(propertyRoutes, { prefix: '/api/v1/properties' });
   fastify.register(callbackRoutes, { prefix: '/api/v1/callbacks' });
+    fastify.register(inspectionRoutes, { prefix: '/api/v1/inspections' });
+    fastify.register(deviceRoutes, { prefix: '/api/v1/devices' });
+    fastify.register(recurringRoutes, { prefix: '/api/v1/recurring' });
+    fastify.register(profitabilityRoutes, { prefix: '/api/v1/profitability' });
+    fastify.register(commercialRoutes, { prefix: '/api/v1/commercial' });
+    fastify.register(catalogRoutes, { prefix: '/api/v1/catalog' });
   fastify.register(surveyRoutes, { prefix: '/api/v1/surveys' });
 
   // === Communications Domain ===
@@ -146,17 +170,16 @@ async function startFastify() {
   });
 
   // Start Fastify
-  fastify.listen({ port: typeof port === 'string' ? parseInt(port) : port, host: '0.0.0.0' }, () => {
-    console.log(`Fastify API running on port ${port}`);
-    
-    // Start all domain crons
+  await fastify.listen({ port: Number(port), host: '0.0.0.0' });
+  if (process.env.ENABLE_BACKGROUND_JOBS !== 'false') {
     startNotificationCron();
     startPreVisitNotificationCron();
     startHealthScoreCron();
     startJobGenerationCron();
     startFollowUpCron();
     startInventoryCron();
-  });
+  }
+
 }
 
 startFastify().catch(err => {

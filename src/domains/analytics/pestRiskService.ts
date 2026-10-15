@@ -72,7 +72,8 @@ export class PestRiskService {
     }
 
     // 1. Gather all chemical logs for this property
-    const allChemicalLogs = property.jobs.flatMap(j => j.chemicalLogs).sort(
+    const allChemicalLogs = property.jobs.flatMap(j => j.chemicalLogs)
+      .filter((log): log is typeof log & { appliedAt: Date } => log.appliedAt !== null).sort(
       (a, b) => new Date(b.appliedAt).getTime() - new Date(a.appliedAt).getTime()
     );
 

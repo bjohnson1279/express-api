@@ -34,7 +34,7 @@ export const getDashboardAnalytics = async (req: FastifyRequest, reply: FastifyR
     // Calculate jobs completed by technician for leaderboard
     const completedJobs = await prisma.job.findMany({
       where: { status: 'completed' },
-      include: { technician: { include: { user: true } } }
+      include: { technician: { include: { user: { select: { id: true, tenantId: true, email: true, role: true, createdAt: true, updatedAt: true } } } } }
     });
     
     const techLeaderboard: Record<string, {name: string, count: number}> = {};
@@ -71,7 +71,7 @@ export const getDashboardAnalytics = async (req: FastifyRequest, reply: FastifyR
   }
 };
 
-import { PestRiskService } from './PestRiskService';
+import { PestRiskService } from './pestRiskService';
 import { ClimateService } from './ClimateService';
 
 export const getClimateMetrics = async (req: FastifyRequest, reply: FastifyReply) => {
@@ -127,7 +127,7 @@ export const getLaborCosts = async (req: FastifyRequest, reply: FastifyReply) =>
   try {
     const jobs = await prisma.job.findMany({
       where: { status: 'completed', onSiteTimeMinutes: { not: null } },
-      include: { technician: { include: { user: true } } }
+      include: { technician: { include: { user: { select: { id: true, tenantId: true, email: true, role: true, createdAt: true, updatedAt: true } } } } }
     });
 
     const laborAnalytics: Record<string, { technician: string, totalOnSiteMinutes: number, totalDriveMinutes: number, jobsCount: number }> = {};
@@ -160,7 +160,7 @@ export const exportReport = async (req: FastifyRequest, reply: FastifyReply) => 
 
     let data: any[] = [];
     if (type === 'productivity') {
-      const jobs = await prisma.job.findMany({ include: { technician: { include: { user: true }} } });
+      const jobs = await prisma.job.findMany({ include: { technician: { include: { user: { select: { id: true, tenantId: true, email: true, role: true, createdAt: true, updatedAt: true } } }} } });
       const stats: any = {};
       jobs.forEach(j => {
         if (j.technician?.user) {
@@ -182,11 +182,12 @@ export const exportReport = async (req: FastifyRequest, reply: FastifyReply) => 
         Amount: i.totalAmount
       }));
     } else if (type === 'chemicals') {
-      const usage = await prisma.materialUsage.findMany({ include: { inventoryItem: true, job: { include: { customer: true } } } });
+      const usage = await prisma.chemicalApplicationLog.findMany({ include: { inventoryItem: true, job: { include: { customer: true } } } });
       data = usage.map(u => ({
-        Chemical: u.inventoryItem?.name || 'Unknown',
-        Quantity: u.quantity,
-        Status: u.status,
+        Chemical: u.chemicalName,
+        Quantity: u.quantityUsed,
+        Unit: u.unit,
+        AppliedAt: u.appliedAt,
         Customer: u.job?.customer?.name || 'Unknown'
       }));
     } else {
@@ -201,13 +202,12 @@ export const exportReport = async (req: FastifyRequest, reply: FastifyReply) => 
       const json2csvParser = new Parser();
       const csv = json2csvParser.parse(data);
       reply.header('Content-Type', 'text/csv');
-      reply.attachment(`${type}-report.csv`);
+      reply.header('Content-Disposition', `attachment; filename="${type}-report.csv"`);
       return reply.send(csv);
     } else if (format === 'pdf') {
       const doc = new PDFDocument();
       reply.header('Content-Type', 'application/pdf');
-      reply.attachment(`${type}-report.pdf`);
-      doc.pipe(res);
+      reply.header('Content-Disposition', `attachment; filename="${type}-report.pdf"`);
 
       doc.fontSize(20).text(`${String(type).toUpperCase()} REPORT`, { align: 'center' });
       doc.moveDown();
@@ -218,6 +218,7 @@ export const exportReport = async (req: FastifyRequest, reply: FastifyReply) => 
       });
 
       doc.end();
+      return reply.send(doc);
     } else {
       reply.status(400).send({ error: 'Unsupported format type. Use csv or pdf' });
     }

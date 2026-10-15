@@ -22,7 +22,7 @@ export function startPreVisitNotificationCron() {
           }
         },
         include: {
-          customer: true
+          customer: { include: { phones: { orderBy: { isPrimary: 'desc' } }, emails: { orderBy: { isPrimary: 'desc' } } } }
         }
       });
 
@@ -31,20 +31,24 @@ export function startPreVisitNotificationCron() {
         const existingNotification = await prisma.notificationQueue.findFirst({
           where: {
             jobId: job.id,
-            type: 'pre_visit_reminder'
+            tenantId: job.tenantId,
+            messageContent: { startsWith: 'Reminder: You have an upcoming service appointment scheduled for ' }
           }
         });
 
         if (!existingNotification && job.customer) {
-          const contactTarget = job.customer.phone || job.customer.email || '';
-          const channel = job.customer.phone ? 'SMS' : 'EMAIL';
+          const phone = job.customer.phones.find(contact => contact.receivesSms && contact.phoneNumber);
+          const email = job.customer.emails.find(contact => contact.emailAddress);
+          const contactTarget = phone?.phoneNumber || email?.emailAddress;
+          if (!contactTarget) continue;
+          const channel = phone ? 'SMS' : 'EMAIL';
           const scheduledTime = job.scheduledStart?.toLocaleString() || 'soon';
 
           await prisma.notificationQueue.create({
             data: {
               customerId: job.customerId,
               jobId: job.id,
-              type: 'pre_visit_reminder',
+              tenantId: job.tenantId,
               channel: channel,
               contactTarget: contactTarget,
               messageContent: `Reminder: You have an upcoming service appointment scheduled for ${scheduledTime}.`,

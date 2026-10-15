@@ -1,45 +1,28 @@
+import { unlink } from 'fs/promises';
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { PrismaClient } from '@prisma/client';
-import multer from 'multer';
+import { saveMultipartUpload } from '../../shared/multipartUpload';
 import path from 'path';
-import fs from 'fs';
+
 
 const prisma = new PrismaClient();
-
-// Configure multer for local file storage (can be swapped for S3 later)
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadPath = path.join(__dirname, '../../uploads');
-    if (!fs.existsSync(uploadPath)) {
-      fs.mkdirSync(uploadPath, { recursive: true });
-    }
-    cb(null, uploadPath);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
-export const upload = multer({ storage });
 
 export class OnboardingController {
   
   static async uploadDocument(req: FastifyRequest, reply: FastifyReply) {
     try {
-      const { userId, taskId, documentType } = (req.body as any);
-      const file = req.file;
+      const file = await saveMultipartUpload(req, 'document', path.join(process.cwd(), 'uploads/onboarding'));
+      const { userId, taskId, documentType } = file.fields;
 
-      if (!file) {
-        return reply.status(400).send({ error: 'No file uploaded' });
-      }
-
+      const owner = await prisma.user.findFirst({ where: { id: userId, tenantId: (req as any).user.tenantId }, select: { id: true } });
+      const task = !taskId || await prisma.employeeOnboardingTask.findFirst({ where: { id: taskId, userId, user: { tenantId: (req as any).user.tenantId } }, select: { id: true } });
+      if (!owner || !task) { await unlink(file.filepath); return reply.status(404).send({ error: 'User or task not found' }); }
       const document = await prisma.employeeDocument.create({
         data: {
           userId,
           taskId: taskId || null,
           documentType,
-          filePath: file.path
+          filePath: file.filepath
         }
       });
 
@@ -53,7 +36,8 @@ export class OnboardingController {
       reply.status(201).send({ success: true, document });
     } catch (error) {
       console.error('Error uploading document:', error);
-      reply.status(500).send({ error: 'Failed to upload document' });
+      const status = (error as { statusCode?: number }).statusCode || 500;
+      reply.status(status).send({ error: status < 500 ? (error as Error).message : 'Failed to upload document' });
     }
   }
 
@@ -61,7 +45,7 @@ export class OnboardingController {
     try {
       const { userId } = (req.params as any);
       const tasks = await prisma.employeeOnboardingTask.findMany({
-        where: { userId },
+        where: { userId, user: { tenantId: (req as any).user.tenantId } },
         include: { checklist: true, documents: true }
       });
       reply.send({ tasks });

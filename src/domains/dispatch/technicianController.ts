@@ -1,60 +1,16 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { PrismaClient } from '@prisma/client';
-import { eventBus } from '../comms/eventBus';
-
-const prisma = new PrismaClient();
-
-export const getTechnicians = async (req: FastifyRequest, reply: FastifyReply) => {
-  try {
-    const techs = await prisma.technician.findMany({
-      include: { user: true }
-    });
-    reply.send(techs);
-  } catch (error) {
-    console.error(error);
-    reply.status(500).send({ error: 'Internal server error' });
-  }
+import { callbackActor, CallbackError, jobCommand, camelJob } from './jobService';
+const handler=(action:string)=>async(req:FastifyRequest,reply:FastifyReply)=>{
+ try {
+  const id=(req.params as any).id;
+  const body=action==='list'?{technician_id:id}:action==='location'?{...(req.body as any),id}:{};
+  const value=await jobCommand(callbackActor(req.headers.authorization),action,body);
+  return reply.send(camelJob(action==='list'?value.filter((j:any)=>!['completed','cancelled'].includes(j.status)):value));
+ } catch(error) {
+  const e=error instanceof CallbackError?error:new CallbackError(500,'Technician operation failed');
+  return reply.status(e.status).send({error:e.message});
+ }
 };
-
-export const getTechnicianSchedule = async (req: FastifyRequest, reply: FastifyReply) => {
-  try {
-    const { id } = (req.params as any);
-    // For MVP, we'll fetch jobs assigned to the tech that are scheduled.
-    // We could filter by today's date if needed, but we'll fetch all assigned non-completed jobs.
-    const jobs = await prisma.job.findMany({
-      where: {
-        technicianId: id,
-        status: { notIn: ['completed', 'cancelled'] }
-      },
-      include: {
-        customer: true,
-        property: true
-      },
-      orderBy: { scheduledStart: 'asc' }
-    });
-    reply.send(jobs);
-  } catch (error) {
-    console.error(error);
-    reply.status(500).send({ error: 'Internal server error' });
-  }
-};
-
-export const updateLocation = async (req: FastifyRequest, reply: FastifyReply) => {
-  try {
-    const { id } = (req.params as any);
-    const { lat, lng } = (req.body as any);
-    
-    const updated = await prisma.technician.update({
-      where: { id },
-      data: {
-        currentLocationLat: lat,
-        currentLocationLng: lng
-      }
-    });
-    eventBus.broadcast('tech_updated', updated);
-    reply.send(updated);
-  } catch (error) {
-    console.error(error);
-    reply.status(500).send({ error: 'Internal server error' });
-  }
-};
+export const getTechnicians=handler('technicians');
+export const getTechnicianSchedule=handler('list');
+export const updateLocation=handler('location');

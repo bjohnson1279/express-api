@@ -6,6 +6,7 @@ const prisma = new PrismaClient();
 export const getContracts = async (req: FastifyRequest, reply: FastifyReply) => {
   try {
     const contracts = await prisma.serviceContract.findMany({
+      where: { tenantId: (req as any).user.tenantId },
       include: {
         customer: true,
         property: true
