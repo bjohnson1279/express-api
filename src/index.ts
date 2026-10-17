@@ -1,3 +1,4 @@
+import { databaseContext, verifyDatabaseRoles } from './shared/database';
 import { requiredRoles } from './shared/auth/session';
 import authRoutes from './shared/auth/authRoutes';
 import fastifyLib, { FastifyRequest, FastifyReply } from 'fastify';
@@ -65,12 +66,15 @@ const fastify = fastifyLib({ logger: true, trustProxy: true });
 const port = process.env.PORT || 8000;
 
 async function startFastify() {
-  await fastify.register(fastifyCors);
+  await verifyDatabaseRoles();
+  fastify.addHook('onRequest', (req, reply, done) => databaseContext.run({ jwt: req.headers.authorization?.startsWith('Bearer ') ? req.headers.authorization.slice(7) : undefined }, done));
+  await fastify.register(fastifyCors,{exposedHeaders:['X-Page-Limit','X-Has-More','X-Next-Cursor']});
   await fastify.register(fastifyMultipart);
   
   // Apply rate limiting and usage metering globally to all API routes
   await fastify.register(apiLimiter);
   
+  fastify.addHook('preSerialization', async (req, reply, payload) => JSON.parse(JSON.stringify(payload, (key, value) => ['password_hash','passwordHash'].includes(key) ? undefined : value)));
   fastify.addHook('onResponse', usageMetering);
   fastify.addHook('onResponse', auditMiddleware);
 

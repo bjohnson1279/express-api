@@ -1,11 +1,12 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { callbackActor, CallbackError, jobCommand, camelJob } from './jobService';
+import { callbackActor, CallbackError, jobCommand, camelJob, pageHeaders } from './jobService';
 const handler=(action:string)=>async(req:FastifyRequest,reply:FastifyReply)=>{
  try {
   const id=(req.params as any).id;
-  const body=action==='list'?{technician_id:id}:action==='location'?{...(req.body as any),id}:{};
+  const body=action==='list'?{...(req.query as any),technician_id:id,status:'scheduled,in_progress'}:action==='location'?{...(req.body as any),id}:{};
   const value=await jobCommand(callbackActor(req.headers.authorization),action,body);
-  return reply.send(camelJob(action==='list'?value.filter((j:any)=>!['completed','cancelled'].includes(j.status)):value));
+  if(action==='list') { for(const [name,v] of Object.entries(pageHeaders(value))) reply.header(name,v); }
+  return reply.send(camelJob(action==='list'?value.items:value));
  } catch(error) {
   const e=error instanceof CallbackError?error:new CallbackError(500,'Technician operation failed');
   return reply.status(e.status).send({error:e.message});

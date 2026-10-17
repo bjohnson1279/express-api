@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../../shared/database';
 import { ClimateService, ClimateData } from './ClimateService';
 
 const prisma = new PrismaClient();

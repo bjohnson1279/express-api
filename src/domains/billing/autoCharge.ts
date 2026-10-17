@@ -1,4 +1,4 @@
-import cron from 'node-cron';
+import cron from '../../shared/scheduler';
 import { stripeService } from './stripeService';
 
 export const startAutoChargeCron = () => {

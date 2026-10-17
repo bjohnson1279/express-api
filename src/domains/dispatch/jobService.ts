@@ -1,14 +1,17 @@
 import { callbackActor, CallbackError, CallbackActor } from '../crm/callbackService';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../../shared/database';
 const prisma = new PrismaClient();
 export { callbackActor, CallbackError };
 export function normalizeJobBody(body: Record<string, any> = {}) {
-  const aliases: Record<string,string> = { jobIds:'job_ids',jobId:'job_id',startLat:'start_lat',startLng:'start_lng',tenantId:'tenant_id',customerId:'customer_id',propertyId:'property_id',technicianId:'technician_id',scheduledStart:'scheduled_start',scheduledEnd:'scheduled_end',contractId:'contract_id' };
+  const aliases: Record<string,string> = { jobIds:'job_ids',jobId:'job_id',startLat:'start_lat',startLng:'start_lng',tenantId:'tenant_id',customerId:'customer_id',propertyId:'property_id',technicianId:'technician_id',scheduledStart:'scheduled_start',scheduledEnd:'scheduled_end',contractId:'contract_id',activeOnly:'active_only',includeUnscheduled:'include_unscheduled' };
   return Object.fromEntries(Object.entries(body).map(([key,value])=>[aliases[key]||key,value]));
 }
 export async function jobCommand(actor: CallbackActor, action: string, body: Record<string, any> = {}) {
   try {
-    const rows = await prisma.$queryRaw<{result:any}[]>`SELECT job_api(${action}::text,${actor.tenantId}::uuid,${actor.id}::uuid,${JSON.stringify(normalizeJobBody(body))}::jsonb) AS result`;
+    const payload=JSON.stringify(normalizeJobBody(body));
+    const rows = ['list','calendar'].includes(action)
+      ? await prisma.$queryRaw<{result:any}[]>`SELECT job_page(${action}::text,${actor.tenantId}::uuid,${actor.id}::uuid,${payload}::jsonb) AS result`
+      : await prisma.$queryRaw<{result:any}[]>`SELECT job_api(${action}::text,${actor.tenantId}::uuid,${actor.id}::uuid,${payload}::jsonb) AS result`;
     return rows[0].result;
   } catch (error: any) {
     const code=error?.meta?.code;
@@ -27,4 +30,8 @@ export function jobCalendar(jobs: any[]) {
     start:j.scheduled_start,end:j.scheduled_end||new Date(new Date(j.scheduled_start).getTime()+3600000).toISOString(),
     status:j.status,color:({completed:'#10b981',invoiced:'#10b981',in_progress:'#f59e0b',cancelled:'#ef4444'} as Record<string,string>)[j.status]||'#3b82f6'
   }));
+}
+
+export function pageHeaders(page: any) {
+  return {'Cache-Control':'no-store','X-Page-Limit':String(page.limit),'X-Has-More':String(page.has_more),'X-Next-Cursor':page.next_cursor || ''};
 }

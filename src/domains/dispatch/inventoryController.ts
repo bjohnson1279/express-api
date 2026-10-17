@@ -1,5 +1,5 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../../shared/database';
 import { AuthRequest } from '../../shared/middleware/authMiddleware';
 
 const prisma = new PrismaClient();

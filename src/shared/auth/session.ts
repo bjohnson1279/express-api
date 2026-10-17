@@ -1,6 +1,6 @@
-import { PrismaClient } from '@prisma/client';
+import { authenticationClient } from '../database';
 import { callbackActor } from '../../domains/crm/callbackService';
-const prisma = new PrismaClient();
+const prisma = authenticationClient();
 export interface SessionActor { id: string; tenantId: string; role: string; email: string }
 export class SessionError extends Error { constructor(public status: number, message: string) { super(message); } }
 export async function authenticate(authorization?: string): Promise<SessionActor> {

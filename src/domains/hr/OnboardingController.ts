@@ -1,6 +1,7 @@
+import fs from 'fs';
 import { unlink } from 'fs/promises';
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../../shared/database';
 import { saveMultipartUpload } from '../../shared/multipartUpload';
 import path from 'path';
 
@@ -9,6 +10,19 @@ const prisma = new PrismaClient();
 
 export class OnboardingController {
   
+
+  static async downloadDocument(req: FastifyRequest, reply: FastifyReply) {
+    try {
+      const id = String((req.params as any).id);
+      if (!/^[0-9a-f-]{36}$/i.test(id)) return reply.status(404).send({ error: 'Document not found' });
+      const document = await prisma.employeeDocument.findFirst({ where: { id, user: { tenantId: (req as any).user.tenantId } }, select: { filePath: true } });
+      if (!document) return reply.status(404).send({ error: 'Document not found' });
+      const file = await fs.promises.realpath(document.filePath);
+      const roots = await Promise.all(['uploads/onboarding'].map(root => fs.promises.realpath(path.join(process.cwd(), root)).catch(() => '')));
+      if (!roots.some(root => root && file.startsWith(root + path.sep)) || !(await fs.promises.stat(file)).isFile()) return reply.status(404).send({ error: 'Document not found' });
+      return reply.header('Cache-Control','no-store').header('Content-Type','application/octet-stream').header('Content-Disposition','attachment').send(fs.createReadStream(file));
+    } catch { return reply.status(404).send({ error: 'Document not found' }); }
+  }
   static async uploadDocument(req: FastifyRequest, reply: FastifyReply) {
     try {
       const file = await saveMultipartUpload(req, 'document', path.join(process.cwd(), 'uploads/onboarding'));

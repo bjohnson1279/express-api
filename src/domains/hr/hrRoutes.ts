@@ -4,6 +4,7 @@ import { getStaff, getCourses, assignCertification } from './hrController';
 import { OnboardingController } from './OnboardingController';
 
 const routes: FastifyPluginAsync = async (fastify, opts) => {
+fastify.get('/documents/:id/download', OnboardingController.downloadDocument);
 fastify.get('/staff', getStaff);
 fastify.get('/courses', getCourses);
 fastify.post('/certifications', assignCertification);

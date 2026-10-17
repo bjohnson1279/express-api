@@ -1,6 +1,6 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { AuthRequest } from '../../shared/middleware/authMiddleware';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../../shared/database';
 import { syncToErp } from './erpIntegration';
 
 const prisma = new PrismaClient();

@@ -1,5 +1,5 @@
 import PDFDocument from 'pdfkit';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../../shared/database';
 import fs from 'fs';
 import path from 'path';
 

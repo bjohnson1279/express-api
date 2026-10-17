@@ -1,5 +1,6 @@
-import cron from 'node-cron';
-import { PrismaClient, ContractCadence } from '@prisma/client';
+import cron from '../../shared/scheduler';
+import { PrismaClient } from '../../shared/database';
+import { ContractCadence } from '@prisma/client';
 
 const prisma = new PrismaClient();
 

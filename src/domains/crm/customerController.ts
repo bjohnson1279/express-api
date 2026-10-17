@@ -1,6 +1,6 @@
 import { SessionActor } from '../../shared/auth/session';
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../../shared/database';
 
 const prisma = new PrismaClient();
 

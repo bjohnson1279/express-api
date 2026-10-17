@@ -693,6 +693,8 @@ model ErpSyncLog {
   resourceType String @map("resource_type") @db.VarChar(50)
   status String @db.VarChar(50)
   syncTimestamp DateTime? @default(dbgenerated("CURRENT_TIMESTAMP")) @map("sync_timestamp") @db.Timestamp(6)
+  tenantId String? @default(dbgenerated("app_private.verified_tenant()")) @map("tenant_id") @db.Uuid
+  tenant Tenant? @relation("erp_sync_logs_tenant_id_fkey", fields: [tenantId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "erp_sync_logs_tenant_id_fkey")
   @@map("erp_sync_logs")
 }
 
@@ -1429,6 +1431,7 @@ model Tenant {
   contactLogs ContactLog[] @relation("contact_logs_tenant_id_fkey")
   deviceRequestRecords DeviceRequest[] @relation("device_requests_tenant_id_fkey")
   doNotKnockRecords DoNotKnockRecord[] @relation("do_not_knock_records_tenant_id_fkey")
+  erpSyncLogRecords ErpSyncLog[] @relation("erp_sync_logs_tenant_id_fkey")
   inspectionRequestRecords InspectionRequest[] @relation("inspection_requests_tenant_id_fkey")
   inspectionRecords Inspection[] @relation("inspections_tenant_id_fkey")
   internalNotes InternalNote[] @relation("internal_notes_tenant_id_fkey")

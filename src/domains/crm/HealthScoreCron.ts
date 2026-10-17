@@ -1,4 +1,4 @@
-import cron from 'node-cron';
+import cron from '../../shared/scheduler';
 import { HealthScoreService } from './HealthScoreService';
 
 const healthScoreService = new HealthScoreService();

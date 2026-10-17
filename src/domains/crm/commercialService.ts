@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../../shared/database';
 import { callbackActor, CallbackActor, CallbackError } from './callbackService';
 export { callbackActor, CallbackError };
 const prisma=new PrismaClient();

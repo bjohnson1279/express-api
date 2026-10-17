@@ -1,5 +1,5 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../../shared/database';
 
 const prisma = new PrismaClient();
 export class CallbackError extends Error {

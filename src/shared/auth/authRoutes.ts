@@ -1,10 +1,10 @@
 import rateLimit from '@fastify/rate-limit';
 import { FastifyPluginAsync } from 'fastify';
-import { PrismaClient } from '@prisma/client';
+import { authenticationClient } from '../database';
 import jwt from 'jsonwebtoken';
 import { hashPassword, verifyPassword } from './password';
 import { AuthRequest, verifyToken } from '../middleware/authMiddleware';
-const prisma = new PrismaClient();
+const prisma = authenticationClient();
 const staffRoles = ['SUPER_ADMIN', 'MANAGER', 'DISPATCHER', 'CUSTOMER_SERVICE_REP', 'DOOR_TO_DOOR_SALES'];
 const routes: FastifyPluginAsync = async app => {
   await app.register(rateLimit, { global: false, keyGenerator: req => req.raw.socket.remoteAddress || 'unknown' });

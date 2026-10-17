@@ -1,5 +1,5 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../../shared/database';
 import twilio from 'twilio';
 import { eventBus } from '../comms/eventBus';
 

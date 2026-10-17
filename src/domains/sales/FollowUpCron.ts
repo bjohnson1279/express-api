@@ -1,5 +1,5 @@
-import cron from 'node-cron';
-import { PrismaClient } from '@prisma/client';
+import cron from '../../shared/scheduler';
+import { PrismaClient } from '../../shared/database';
 import { NotificationService } from '../comms/NotificationService';
 
 const prisma = new PrismaClient();

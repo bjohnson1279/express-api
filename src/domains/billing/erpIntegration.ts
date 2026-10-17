@@ -1,4 +1,5 @@
-import { PrismaClient, ErpProvider } from '@prisma/client';
+import { PrismaClient } from '../../shared/database';
+import { ErpProvider } from '@prisma/client';
 
 const prisma = new PrismaClient();
 

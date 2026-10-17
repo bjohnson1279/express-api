@@ -1,6 +1,6 @@
 import { FastifyPluginAsync } from 'fastify';
 import { saveMultipartUpload } from '../../shared/multipartUpload';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../../shared/database';
 import path from 'path';
 
 const routes: FastifyPluginAsync = async (fastify, opts) => {

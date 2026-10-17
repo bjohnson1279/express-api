@@ -1,5 +1,5 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../../shared/database';
 import { eventBus } from './eventBus';
 
 const prisma = new PrismaClient();
