@@ -15,7 +15,7 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '22.x'
-    - run: npm install
+    - run: rm -rf node_modules && npm install
     - run: chmod +x node_modules/.bin/* || true
     - run: npx prisma generate
     - run: npm test
