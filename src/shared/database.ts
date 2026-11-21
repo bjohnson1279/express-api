@@ -20,8 +20,9 @@ export function inWorkerContext<T>(operation: () => T): T { return databaseConte
 function makeClient(): NativeClient {
   // Unit mocks still use the generated Prisma surface. Database RLS itself has no test bypass.
   if (process.env.NODE_ENV === 'test') return client(process.env.DATABASE_URL);
-  if (scoped) return scoped;
   const raw = application();
+  if (typeof (raw as any).$extends !== 'function') return client(process.env.DATABASE_URL);
+  if (scoped) return scoped;
   const extended = raw.$extends({ query: { $allOperations({ model, operation, args, query }: any) {
     const context = databaseContext.getStore();
     if (context?.worker) {

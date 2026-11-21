@@ -158,7 +158,11 @@ describe('Survey API Controller', () => {
       expect(prisma.survey.create).toHaveBeenCalledTimes(1);
       expect(prisma.customer.findUnique).toHaveBeenCalledWith({
         where: { id: 'customer-1' },
-        include: { user: true, phones: true, emails: true },
+        include: {
+          user: { select: { id: true, tenantId: true, email: true, role: true, createdAt: true, updatedAt: true } },
+          phones: true,
+          emails: true,
+        },
       });
       // Both SMS and EMAIL queued
       expect(prisma.notificationQueue.create).toHaveBeenCalledTimes(2);
