@@ -19,6 +19,8 @@ import { startInventoryCron } from './domains/dispatch/InventoryCron';
 
 // Domain: Billing
 import financeRoutes from './domains/billing/financeRoutes';
+import { stripeWebhook } from './domains/billing/webhookController';
+import { startAutoChargeCron } from './domains/billing/autoCharge';
 
 // Domain: CRM
 import customerRoutes from './domains/crm/customerRoutes';
@@ -80,7 +82,15 @@ async function startFastify() {
 
   fastify.addHook('onRequest', async (req: any, reply) => {
     const route = req.url.split('?')[0].replace(/\/$/, '');
-    if (req.method === 'OPTIONS' || route === '/health' || route === '/api/v1/health' || route === '/api/v1/auth/login') return;
+    if (
+      req.method === 'OPTIONS' ||
+      route === '/health' ||
+      route === '/api/v1/health' ||
+      route === '/api/v1/auth/login' ||
+      route.startsWith('/api/webhooks/twilio') ||
+      route === '/api/webhooks/stripe' ||
+      route === '/api/v1/webhooks/stripe'
+    ) return;
     await verifyToken(req, reply);
     if (reply.sent) return;
     const roles = requiredRoles(route);
@@ -132,8 +142,10 @@ async function startFastify() {
     fastify.register(catalogRoutes, { prefix: '/api/v1/catalog' });
   fastify.register(surveyRoutes, { prefix: '/api/v1/surveys' });
 
-  // === Communications Domain ===
+  // === Communications & Billing Webhooks ===
   fastify.register(twilioRoutes, { prefix: '/api/webhooks/twilio' });
+  fastify.post('/api/webhooks/stripe', stripeWebhook);
+  fastify.post('/api/v1/webhooks/stripe', stripeWebhook);
   fastify.register(eventRoutes, { prefix: '/api/events' });
   fastify.register(chatRoutes, { prefix: '/api/v1/comms/chat' });
 
@@ -182,6 +194,7 @@ async function startFastify() {
     startJobGenerationCron();
     startFollowUpCron();
     startInventoryCron();
+    startAutoChargeCron();
   }
 
 }

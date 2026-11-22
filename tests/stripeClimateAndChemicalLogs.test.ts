@@ -20,6 +20,8 @@ const mPrismaClient: any = {
   chemicalApplicationLog: { create: jest.fn() },
   inventoryItem: { findFirst: jest.fn(), update: jest.fn() },
   purchaseOrder: { findFirst: jest.fn(), create: jest.fn() },
+  invoice: { findMany: jest.fn(), update: jest.fn() },
+  payment: { create: jest.fn() },
 };
 
 jest.mock('@prisma/client', () => ({
@@ -27,6 +29,8 @@ jest.mock('@prisma/client', () => ({
 }));
 
 import { stripeService } from '../src/domains/billing/stripeService';
+import { stripeWebhook } from '../src/domains/billing/webhookController';
+import { processAutoCharges } from '../src/domains/billing/autoCharge';
 import { ClimateService } from '../src/domains/analytics/ClimateService';
 import { recordChemicalApplication } from '../src/domains/dispatch/inventoryController';
 
@@ -68,6 +72,48 @@ describe('StripeService, ClimateService HTTP/Cache, and Chemical Auto-Deduction 
 
       mockStripe.paymentMethods.list.mockResolvedValueOnce({ data: [] });
       await expect(stripeService.chargeCustomer('cus_empty', 1000)).rejects.toThrow('No payment methods found');
+    });
+
+    it('validates stripeWebhook signatures and processes payment_intent events', () => {
+      const rMissing = mockReply();
+      stripeWebhook({ headers: {}, body: {} } as any, rMissing);
+      expect(rMissing.statusCode).toBe(400);
+
+      mockStripe.webhooks.constructEvent.mockImplementationOnce(() => {
+        throw new Error('Bad signature');
+      });
+      const rBad = mockReply();
+      stripeWebhook({ headers: { 'stripe-signature': 't=1,v1=bad' }, body: '{}' } as any, rBad);
+      expect(rBad.statusCode).toBe(400);
+
+      mockStripe.webhooks.constructEvent.mockReturnValueOnce({
+        type: 'payment_intent.succeeded',
+        data: { object: { id: 'pi_1' } },
+      });
+      const rOk = mockReply();
+      stripeWebhook({ headers: { 'stripe-signature': 't=1,v1=good' }, body: '{}' } as any, rOk);
+      expect(rOk.statusCode).toBe(200);
+      expect(rOk.body).toEqual({ received: true });
+    });
+
+    it('processes auto-charges for unpaid invoices and records completed payments', async () => {
+      mPrismaClient.invoice.findMany.mockResolvedValueOnce([
+        { id: 'inv-1', totalAmount: 125.0, job: { customerId: 'cust-1' } },
+        { id: 'inv-2', totalAmount: 80.0, job: { customerId: 'cust-2' } },
+      ]);
+      mockStripe.paymentIntents.create
+        .mockResolvedValueOnce({ id: 'pi_auto_1' })
+        .mockRejectedValueOnce(new Error('Card declined'));
+      mPrismaClient.payment.create.mockResolvedValueOnce({ id: 'pmt-1' });
+      mPrismaClient.invoice.update.mockResolvedValueOnce({ id: 'inv-1', status: 'paid' });
+
+      const summary = await processAutoCharges(mPrismaClient);
+      expect(summary).toEqual({ processed: 2, succeeded: 1, failed: 1 });
+      expect(mPrismaClient.payment.create).toHaveBeenCalledTimes(1);
+      expect(mPrismaClient.invoice.update).toHaveBeenCalledWith({
+        where: { id: 'inv-1' },
+        data: { status: 'paid' },
+      });
     });
   });
 
