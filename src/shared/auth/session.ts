@@ -15,7 +15,7 @@ export const staffRoles = ['SUPER_ADMIN', 'MANAGER', 'DISPATCHER', 'CUSTOMER_SER
 export function requiredRoles(path: string): string[] | null {
   const route = path.split('?')[0].replace(/\/$/, '');
   if (route === '/graphql') return null;
-  if (/^\/api\/v1\/(callbacks|inspections|devices|catalog|recurring|profitability|commercial|jobs)(\/|$)/.test(route)) return null;
+  if (/^\/api\/v1\/(callbacks|inspections|devices|catalog|recurring|profitability|commercial|jobs|playbooks)(\/|$)/.test(route)) return null;
   if (/^\/api\/(?:v1\/)?(hr|finance|inventory|marketing|quotes|invoices|payments|commissions|expenses|accounting)(\/|$)/.test(route)) return ['SUPER_ADMIN', 'MANAGER'];
   if (/^\/api\/(?:v1\/)?dispatch(\/|$)/.test(route)) return ['SUPER_ADMIN', 'MANAGER', 'DISPATCHER'];
   return staffRoles;

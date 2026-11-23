@@ -44,6 +44,11 @@ jest.mock('../src/domains/crm/recurringService', () => ({
   CallbackError: MockCallbackError,
   recurringCommand: (...args: any[]) => mockCmd(...args),
 }));
+jest.mock('../src/domains/crm/playbookService', () => ({
+  callbackActor: (...args: any[]) => mockActor(...args),
+  CallbackError: MockCallbackError,
+  playbookCommand: (...args: any[]) => mockCmd(...args),
+}));
 
 import Fastify from 'fastify';
 import callbackRoutes from '../src/domains/crm/callbackRoutes';
@@ -53,6 +58,7 @@ import deviceRoutes from '../src/domains/crm/deviceRoutes';
 import inspectionRoutes from '../src/domains/crm/inspectionRoutes';
 import profitabilityRoutes from '../src/domains/crm/profitabilityRoutes';
 import recurringRoutes from '../src/domains/crm/recurringRoutes';
+import playbookRoutes from '../src/domains/crm/playbookRoutes';
 
 describe('CRM Feature Fastify Route Plugins (Express)', () => {
   beforeEach(() => {
@@ -68,6 +74,7 @@ describe('CRM Feature Fastify Route Plugins (Express)', () => {
     await app.register(inspectionRoutes, { prefix: '/inspections' });
     await app.register(profitabilityRoutes, { prefix: '/profitability' });
     await app.register(recurringRoutes, { prefix: '/recurring' });
+    await app.register(playbookRoutes, { prefix: '/playbooks' });
 
     mockCmd.mockResolvedValue({ ok: true });
 
@@ -89,6 +96,12 @@ describe('CRM Feature Fastify Route Plugins (Express)', () => {
       ['POST', '/profitability/policies'],
       ['GET', '/recurring/'],
       ['POST', '/recurring/assess'],
+      ['GET', '/playbooks/'],
+      ['POST', '/playbooks/'],
+      ['POST', '/playbooks/briefs'],
+      ['POST', '/playbooks/templates'],
+      ['POST', '/playbooks/run-1/acknowledge'],
+      ['POST', '/playbooks/run-1/submit'],
     ] as const) {
       const res = await app.inject({
         method,

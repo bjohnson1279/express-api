@@ -32,6 +32,7 @@ import recurringRoutes from './domains/crm/recurringRoutes';
 import profitabilityRoutes from './domains/crm/profitabilityRoutes';
 import commercialRoutes from './domains/crm/commercialRoutes';
 import catalogRoutes from './domains/crm/catalogRoutes';
+import playbookRoutes from './domains/crm/playbookRoutes';
 import propertyRoutes from './domains/crm/propertyRoutes';
 import surveyRoutes from './domains/crm/surveyRoutes';
 import { startHealthScoreCron } from './domains/crm/HealthScoreCron';
@@ -140,6 +141,7 @@ async function startFastify() {
     fastify.register(profitabilityRoutes, { prefix: '/api/v1/profitability' });
     fastify.register(commercialRoutes, { prefix: '/api/v1/commercial' });
     fastify.register(catalogRoutes, { prefix: '/api/v1/catalog' });
+    fastify.register(playbookRoutes, { prefix: '/api/v1/playbooks' });
   fastify.register(surveyRoutes, { prefix: '/api/v1/surveys' });
 
   // === Communications & Billing Webhooks ===
