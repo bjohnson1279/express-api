@@ -24,8 +24,11 @@ const routes: FastifyPluginAsync = async app => {
   route('GET', '/settings', 'settings');
   route('POST', '/settings', 'settings');
   route('GET', '/options', 'options');
+  route('GET', '/completion-check', 'completion_check');
   route('POST', '/briefs', 'save_brief');
   route('POST', '/templates', 'publish_template');
+  route('POST', '/templates/retire', 'retire_template');
+  route('POST', '/assignments', 'assign_template');
   route('GET', '/', 'list');
   route('POST', '/', 'start_run');
   route('GET', '/:id', 'get');
