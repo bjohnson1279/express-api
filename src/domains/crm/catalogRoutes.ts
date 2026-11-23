@@ -6,7 +6,7 @@ const routes:FastifyPluginAsync=async app=>{
   try{return await catalogCommand(callbackActor(req.headers.authorization),action,{...(method==='GET'?req.query as object:req.body as object),...req.params as object});}
   catch(error){const e=error instanceof CallbackError?error:new CallbackError(500,'Catalog request failed');return reply.code(e.status).send({error:e.message});}
  }});
- route('GET','/settings','settings');route('POST','/settings','settings');route('GET','/options','options');
+ route('GET','/settings','settings');route('POST','/settings','settings');route('GET','/options','options');route('GET','/compliance-summary','compliance_summary');
  route('GET','/','list');route('POST','/','create');route('GET','/:id','get');route('GET','/:id/documents/:document_id','document_get');
  for(const action of ['save','document','remove_document','submit','activate','reject','withdraw','next_version'])route('POST','/:id/'+action,action);
 };

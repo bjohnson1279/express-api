@@ -11,6 +11,6 @@ const routes:FastifyPluginAsync=async app=>{
  route('GET','/settings','settings');route('POST','/settings','settings');route('GET','/options','options');
  route('GET','/','list');route('POST','/','create');route('GET','/:id','get');
  route('GET','/:id/attachments/:attachment_id','attachment_get');
- for(const action of ['start','save','submit','review','cancel','attachment'])route('POST','/:id/'+action,action);
+ for(const action of ['start','save','submit','review','cancel','attachment','propose_treatment'])route('POST','/:id/'+action,action);
 };
 export default routes;

@@ -8,6 +8,6 @@ const routes:FastifyPluginAsync=async app=>{
  }});
  route('GET','/settings','settings');route('POST','/settings','settings');route('GET','/options','options');route('GET','/lookup','lookup');
  route('GET','/','list');route('POST','/','create');route('GET','/:id','get');
- for(const action of ['install','relocate','retire','replace'])route('POST','/:id/'+action,action);
+ for(const action of ['install','relocate','retire','replace','record_service'])route('POST','/:id/'+action,action);
 };
 export default routes;
