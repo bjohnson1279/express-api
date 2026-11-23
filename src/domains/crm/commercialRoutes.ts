@@ -26,5 +26,6 @@ route('POST','/:id/contacts','save_contact');
 route('POST','/:id/contacts/:contact_id','save_contact');
 route('POST','/:id/contacts/:contact_id/archive','archive_contact');
 route('GET','/:id/events','events');
+route('GET','/:id/summary','summary');
 };
 export default routes;
