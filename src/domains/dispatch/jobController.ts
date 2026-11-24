@@ -20,3 +20,5 @@ export const createJob=handler('create');
 export const updateJob=handler('update');
 export const clockIn=handler('clock_in');
 export const clockOut=handler('clock_out');
+export const recordSignature=handler('record_signature');
+export const getSignature=handler('get_signature');
