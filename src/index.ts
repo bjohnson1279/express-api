@@ -68,7 +68,7 @@ dotenv.config();
 const fastify = fastifyLib({ logger: true, trustProxy: true });
 const port = process.env.PORT || 8000;
 
-async function startFastify() {
+export async function startFastify(options: { listen?: boolean } = { listen: true }) {
   await verifyDatabaseRoles();
   fastify.addHook('onRequest', (req, reply, done) => databaseContext.run({ jwt: req.headers.authorization?.startsWith('Bearer ') ? req.headers.authorization.slice(7) : undefined }, done));
   await fastify.register(fastifyCors,{exposedHeaders:['X-Page-Limit','X-Has-More','X-Next-Cursor']});
@@ -188,7 +188,11 @@ async function startFastify() {
   });
 
   // Start Fastify
-  await fastify.listen({ port: Number(port), host: '0.0.0.0' });
+  if (options.listen !== false) {
+    await fastify.listen({ port: Number(port), host: '0.0.0.0' });
+  } else {
+    await fastify.ready();
+  }
   if (process.env.ENABLE_BACKGROUND_JOBS !== 'false') {
     startNotificationCron();
     startPreVisitNotificationCron();
@@ -198,10 +202,12 @@ async function startFastify() {
     startInventoryCron();
     startAutoChargeCron();
   }
-
+  return fastify;
 }
 
-startFastify().catch(err => {
-  fastify.log.error(err);
-  process.exit(1);
-});
+if (require.main === module) {
+  startFastify().catch(err => {
+    fastify.log.error(err);
+    process.exit(1);
+  });
+}
