@@ -157,6 +157,25 @@ describe('Express API: analyticsController, chatController, and inventoryControl
       const rBadFmt = mockReply();
       await exportReport({ query: { type: 'revenue', format: 'xlsx' } } as any, rBadFmt);
       expect(rBadFmt.statusCode).toBe(400);
+
+      // Error branches across analyticsController
+      mockGetClimate.mockRejectedValueOnce(new Error('climate err'));
+      const ae1 = mockReply(); await getClimateMetrics({ query: {} } as any, ae1); expect(ae1.statusCode).toBe(500);
+
+      mockCalcRisk.mockRejectedValueOnce(new Error('risk err'));
+      const ae2 = mockReply(); await getPropertyPestRisk({ params: { propertyId: 'p1' }, headers: {} } as any, ae2); expect(ae2.statusCode).toBe(500);
+
+      mockGetHeatmap.mockRejectedValueOnce(new Error('heat err'));
+      const ae3 = mockReply(); await getPestRiskHeatmap({ headers: {} } as any, ae3); expect(ae3.statusCode).toBe(500);
+
+      mockGetHeatmap.mockRejectedValueOnce(new Error('recalc err'));
+      const ae4 = mockReply(); await recalculatePestRisks({ headers: {} } as any, ae4); expect(ae4.statusCode).toBe(500);
+
+      mockPrisma.job.findMany.mockRejectedValueOnce(new Error('labor err'));
+      const ae5 = mockReply(); await getLaborCosts({} as any, ae5); expect(ae5.statusCode).toBe(500);
+
+      mockPrisma.invoice.findMany.mockRejectedValueOnce(new Error('export err'));
+      const ae6 = mockReply(); await exportReport({ query: { type: 'revenue', format: 'csv' } } as any, ae6); expect(ae6.statusCode).toBe(500);
     });
   });
 
@@ -228,6 +247,28 @@ describe('Express API: analyticsController, chatController, and inventoryControl
       const rCanned201 = mockReply();
       await ChatController.createCannedResponse({ body: { shortcut: 'thanks', title: 'Thanks', content: 'Thank you!' }, user: { tenantId: 't1' } } as any, rCanned201);
       expect(rCanned201.statusCode).toBe(201);
+
+      // Error branches across ChatController
+      mockPrisma.chatConversation.findMany.mockRejectedValueOnce(new Error('db'));
+      const ce1 = mockReply(); await ChatController.getConversations({ query: {}, user: { tenantId: 't1' } } as any, ce1); expect(ce1.statusCode).toBe(500);
+
+      mockPrisma.chatConversation.findFirst.mockRejectedValueOnce(new Error('db'));
+      const ce2 = mockReply(); await ChatController.getConversation({ params: { id: 'c1' }, user: { tenantId: 't1' } } as any, ce2); expect(ce2.statusCode).toBe(500);
+
+      mockPrisma.customer.findFirst.mockRejectedValueOnce(new Error('db'));
+      const ce3 = mockReply(); await ChatController.createConversation({ body: { customerId: 'c1' }, user: { tenantId: 't1' } } as any, ce3); expect(ce3.statusCode).toBe(500);
+
+      mockPrisma.chatConversation.findFirst.mockRejectedValueOnce(new Error('db'));
+      const ce4 = mockReply(); await ChatController.sendMessage({ params: { id: 'c1' }, body: { messageText: 'hi' }, user: { tenantId: 't1', id: 'u1' } } as any, ce4); expect(ce4.statusCode).toBe(500);
+
+      mockPrisma.chatConversation.update.mockRejectedValueOnce(new Error('db'));
+      const ce5 = mockReply(); await ChatController.updateConversation({ params: { id: 'c1' }, body: { status: 'OPEN' }, user: { tenantId: 't1' } } as any, ce5); expect(ce5.statusCode).toBe(500);
+
+      mockPrisma.cannedResponse.findMany.mockRejectedValueOnce(new Error('db'));
+      const ce6 = mockReply(); await ChatController.getCannedResponses({ user: { tenantId: 't1' } } as any, ce6); expect(ce6.statusCode).toBe(500);
+
+      mockPrisma.cannedResponse.create.mockRejectedValueOnce(new Error('db'));
+      const ce7 = mockReply(); await ChatController.createCannedResponse({ body: { shortcut: 'a', title: 'b', content: 'c' }, user: { tenantId: 't1' } } as any, ce7); expect(ce7.statusCode).toBe(500);
     });
   });
 
@@ -257,6 +298,22 @@ describe('Express API: analyticsController, chatController, and inventoryControl
       const r5 = mockReply();
       await createPurchaseOrder({ user: { tenantId: 't1' }, body: { itemId: 'i2', quantity: '20', expectedDeliveryDate: '2026-12-01' } } as any, r5);
       expect(r5.statusCode).toBe(201);
+
+      // Error branches across inventoryController
+      mockPrisma.inventoryItem.findMany.mockRejectedValueOnce(new Error('db'));
+      const ie1 = mockReply(); await getInventoryItems({ user: { tenantId: 't1' } } as any, ie1); expect(ie1.statusCode).toBe(500);
+
+      mockPrisma.inventoryItem.create.mockRejectedValueOnce(new Error('db'));
+      const ie2 = mockReply(); await createInventoryItem({ user: { tenantId: 't1' }, body: { name: 'X' } } as any, ie2); expect(ie2.statusCode).toBe(500);
+
+      mockPrisma.inventoryItem.update.mockRejectedValueOnce(new Error('db'));
+      const ie3 = mockReply(); await updateInventoryQuantity({ params: { id: 'i2' }, body: { quantityDelta: '5' } } as any, ie3); expect(ie3.statusCode).toBe(500);
+
+      mockPrisma.purchaseOrder.findMany.mockRejectedValueOnce(new Error('db'));
+      const ie4 = mockReply(); await getPurchaseOrders({ user: { tenantId: 't1' } } as any, ie4); expect(ie4.statusCode).toBe(500);
+
+      mockPrisma.purchaseOrder.create.mockRejectedValueOnce(new Error('db'));
+      const ie5 = mockReply(); await createPurchaseOrder({ user: { tenantId: 't1' }, body: { itemId: 'i2', quantity: '1' } } as any, ie5); expect(ie5.statusCode).toBe(500);
     });
   });
 });

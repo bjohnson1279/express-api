@@ -118,6 +118,16 @@ describe('Express API: customerController, AgreementController, and marketingCon
       const r7 = mockReply();
       await updatePreferences({ params: { id: 'c1' }, body: { emailEnabled: false }, user: { tenantId: 't1' } } as any, r7);
       expect(r7.body.emailEnabled).toBe(false);
+
+      // Error branches across customerController
+      mockPrisma.customer.findFirst.mockRejectedValueOnce(new Error('db'));
+      const ce1 = mockReply(); await getCustomer({ params: { id: 'c1' }, user: { tenantId: 't1' } } as any, ce1); expect(ce1.statusCode).toBe(500);
+
+      mockRepoFindById.mockRejectedValueOnce(new Error('db'));
+      const ce2 = mockReply(); await getPreferences({ params: { id: 'c1' }, user: { tenantId: 't1' } } as any, ce2); expect(ce2.statusCode).toBe(500);
+
+      mockPrisma.customer.findFirst.mockRejectedValueOnce(new Error('db'));
+      const ce3 = mockReply(); await updatePreferences({ params: { id: 'c1' }, body: {}, user: { tenantId: 't1' } } as any, ce3); expect(ce3.statusCode).toBe(500);
     });
   });
 
@@ -177,6 +187,12 @@ describe('Express API: customerController, AgreementController, and marketingCon
       const r3e = mockReply();
       await scheduleFollowup({ user: { tenantId: 't1' }, body: { scheduledDate: '2026-04-10' } } as any, r3e);
       expect(r3e.statusCode).toBe(500);
+
+      mockPrisma.campaign.findMany.mockRejectedValueOnce(new Error('db'));
+      const me1 = mockReply(); await getCampaigns({ user: { tenantId: 't1' } } as any, me1); expect(me1.statusCode).toBe(500);
+
+      mockPrisma.campaign.create.mockRejectedValueOnce(new Error('db'));
+      const me2 = mockReply(); await createCampaign({ user: { tenantId: 't1' }, body: { name: 'X' } } as any, me2); expect(me2.statusCode).toBe(500);
     });
   });
 });

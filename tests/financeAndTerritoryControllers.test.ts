@@ -131,6 +131,25 @@ describe('Express API: financeController and territoryController full coverage',
     const r9 = mockReply();
     await triggerErpSync({ body: { provider: 'QBO', resourceId: 'inv2', resourceType: 'INVOICE', payload: {} } } as any, r9);
     expect(r9.statusCode).toBe(201);
+
+    // Remaining financeController error branches
+    mockPrisma.invoice.findMany.mockRejectedValueOnce(new Error('db'));
+    const re2 = mockReply(); await getInvoices({} as any, re2); expect(re2.statusCode).toBe(500);
+
+    mockPrisma.invoice.create.mockRejectedValueOnce(new Error('db'));
+    const re3 = mockReply(); await createInvoice({ body: { jobId: 'j1', totalAmount: 10 } } as any, re3); expect(re3.statusCode).toBe(500);
+
+    mockPrisma.invoice.update.mockRejectedValueOnce(new Error('db'));
+    const re4 = mockReply(); await markInvoicePaid({ params: { id: 'inv2' } } as any, re4); expect(re4.statusCode).toBe(500);
+
+    mockPrisma.quote.create.mockRejectedValueOnce(new Error('db'));
+    const re5 = mockReply(); await createQuote({ body: {} } as any, re5); expect(re5.statusCode).toBe(500);
+
+    mockPrisma.quote.findMany.mockRejectedValueOnce(new Error('db'));
+    const re6 = mockReply(); await getQuotes({} as any, re6); expect(re6.statusCode).toBe(500);
+
+    mockSyncToErp.mockRejectedValueOnce(new Error('erp fail'));
+    const re9 = mockReply(); await triggerErpSync({ body: {} } as any, re9); expect(re9.statusCode).toBe(500);
   });
 
   it('covers all territoryController handlers and analytics calculations', async () => {
@@ -195,5 +214,24 @@ describe('Express API: financeController and territoryController full coverage',
     expect(r7.body.dealsClosed).toBe(2);
     expect(r7.body.quotaAttainmentPercent).toBe(50);
     expect(r7.body.doNotKnockCount).toBe(1);
+
+    // Remaining territoryController error branches
+    mockTerritoriesExec.mockRejectedValueOnce(new Error('db'));
+    const te1 = mockReply(); await getTerritories({ user: { tenantId: 't1' } } as any, te1); expect(te1.statusCode).toBe(500);
+
+    mockPrisma.territory.findUnique.mockRejectedValueOnce(new Error('db'));
+    const te2 = mockReply(); await getTerritoryById({ params: { id: 'ter1' } } as any, te2); expect(te2.statusCode).toBe(500);
+
+    mockPrisma.territory.create.mockRejectedValueOnce(new Error('db'));
+    const te3 = mockReply(); await createTerritory({ user: { tenantId: 't1' }, body: { name: 'Bad', polygonCoordinates: [[0, 0]] } } as any, te3); expect(te3.statusCode).toBe(500);
+
+    mockPrisma.territory.update.mockRejectedValueOnce(new Error('db'));
+    const te4 = mockReply(); await updateTerritory({ params: { id: 'ter1' }, body: { name: 'X' } } as any, te4); expect(te4.statusCode).toBe(500);
+
+    mockPrisma.territory.delete.mockRejectedValueOnce(new Error('db'));
+    const te5 = mockReply(); await deleteTerritory({ params: { id: 'ter1' } } as any, te5); expect(te5.statusCode).toBe(500);
+
+    mockPrisma.territory.findUnique.mockRejectedValueOnce(new Error('db'));
+    const te6 = mockReply(); await getTerritoryAnalytics({ params: { id: 'ter1' } } as any, te6); expect(te6.statusCode).toBe(500);
   });
 });
