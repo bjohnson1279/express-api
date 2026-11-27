@@ -4,6 +4,8 @@ const mockPrisma: any = {
   $queryRaw: jest.fn(),
   $executeRawUnsafe: jest.fn(),
   serviceAgreement: { create: jest.fn(), update: jest.fn(), upsert: jest.fn(), findUnique: jest.fn() },
+  chatConversation: { findFirst: jest.fn() },
+  employeeDocument: { findFirst: jest.fn() },
 };
 
 jest.mock('../src/shared/database', () => ({
@@ -30,6 +32,8 @@ import { saveMultipartUpload } from '../src/shared/multipartUpload';
 import { auditMiddleware } from '../src/shared/middleware/auditMiddleware';
 import { usageMetering } from '../src/shared/middleware/usageMetering';
 import { AgreementService } from '../src/domains/sales/AgreementService';
+import { ChatController } from '../src/domains/comms/chatController';
+import { OnboardingController } from '../src/domains/hr/OnboardingController';
 
 function mockReply() {
   const r: any = {
@@ -119,5 +123,23 @@ describe('Express Wave 29: last-mile route catches, multipartUpload, middleware 
     existsSpy.mockRestore();
     mkdirSpy.mockRestore();
     writeStreamSpy.mockRestore();
+
+    // ChatController.sendMessage 404 (line 220)
+    mockPrisma.chatConversation.findFirst.mockResolvedValueOnce(null);
+    const rChat = mockReply();
+    await ChatController.sendMessage(
+      { params: { id: 'missing' }, body: { senderType: 'CSR', messageText: 'Hi' }, user: { tenantId: 't1', id: 'u1' } } as any,
+      rChat
+    );
+    expect(rChat.statusCode).toBe(404);
+
+    // OnboardingController.downloadDocument catch (line 24)
+    mockPrisma.employeeDocument.findFirst.mockRejectedValueOnce(new Error('db err'));
+    const rDoc = mockReply();
+    await OnboardingController.downloadDocument(
+      { params: { id: '11111111-1111-1111-1111-111111111111' }, user: { tenantId: 't1' } } as any,
+      rDoc
+    );
+    expect(rDoc.statusCode).toBe(404);
   });
 });
